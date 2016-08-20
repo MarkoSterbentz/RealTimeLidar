@@ -60,9 +60,6 @@ Graphics graphics;
 moodycamel::ReaderWriterQueue<CartesianPoint> rawQueue(MAX_POINTS_IN_GRID);
 moodycamel::ReaderWriterQueue<CartesianPoint> registeredQueue(MAX_POINTS_IN_GRID);
 
-// Some things helpful to controls
-//unsigned previousTime, currentTime, deltaTime; // Used to regulate controls time step
-
 // prototypes
 void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls);
 void initPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread);
@@ -147,7 +144,7 @@ void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls) {
 
         if (receiver.isOptionEnabled(GRAPHICS)) {
             /**************************** HANDLE CONTROLS ********************************/
-            int timeToQuit = controls.handleControls(receiver, camera, gridDrawer); // returns non-zero if quit events happen
+            int timeToQuit = controls.update(receiver, camera, gridDrawer); // returns 1 if quit events happen
             if (timeToQuit) {
                 loop = false;
             }
