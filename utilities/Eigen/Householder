@@ -1,0 +1,23 @@
+#ifndef EIGEN_HOUSEHOLDER_MODULE_H
+#define EIGEN_HOUSEHOLDER_MODULE_H
+
+#include "Core"
+
+#include "Eigen/src/Core/util/DisableStupidWarnings.h"
+
+/** \defgroup Householder_Module Householder module
+  * This module provides Householder transformations.
+  *
+  * \code
+  * #include <Eigen/Householder>
+  * \endcode
+  */
+
+#include "Eigen/src/Householder/Householder.h"
+#include "Eigen/src/Householder/HouseholderSequence.h"
+#include "Eigen/src/Householder/BlockHouseholder.h"
+
+#include "Eigen/src/Core/util/ReenableStupidWarnings.h"
+
+#endif // EIGEN_HOUSEHOLDER_MODULE_H
+/* vim: set filetype=cpp et sw=2 ts=2 ai: */
