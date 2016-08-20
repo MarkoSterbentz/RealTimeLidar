@@ -8,7 +8,7 @@
 #include <vector>
 #include <functional>
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     struct KernelEntry {
         int xOffset, yOffset, weight;

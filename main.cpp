@@ -4,27 +4,18 @@
 
 #include <iostream>
 #include <SDL_timer.h>
-#include <SDL_events.h>
 #include <SDL_thread.h>
 
 #include "Graphics.h"
 #include "Grid.h"
 #include "GridDrawer.h"
-#include "Camera.h"
 #include "readerwriterqueue.h"
-#include "PacketAnalyzer.h"
 #include "PacketReceiver.h"
 #include "ImuReader.h"
+#include "Controls.h"
 
 //#define SHOW_NONCONTRIBUTING_POINTS
 #include "Registrar.h"
-
-#define KEY_MOVE_SENSITIVITY 100.f
-#define KEY_ROTATE_SENSITIVITY 0.01f
-#define MOUSE_SENSITIVITY_X -0.006f
-#define MOUSE_SENSITIVITY_Y 0.006f
-#define MOUSE_SENSITIVITY_WHEEL -800.f
-#define MOUSE_SENSITIVITY_PAN 10.f
 
 #define POINTS_PER_PACKET 384                   // known, do not set
 #define PACKETS_PER_REVOLUTION_1200_RPM 19      // approximate, from observation
@@ -40,7 +31,7 @@
 #define MAX_POINTS_IN_GRID POINTS_PER_CLOUD * NUM_HISTS
 #endif
 
-using namespace LaserMappingDrone;
+using namespace RealTimeLidar;
 
 struct ListeningThreadData {
     PacketReceiver* receiver;
@@ -70,10 +61,10 @@ moodycamel::ReaderWriterQueue<CartesianPoint> rawQueue(MAX_POINTS_IN_GRID);
 moodycamel::ReaderWriterQueue<CartesianPoint> registeredQueue(MAX_POINTS_IN_GRID);
 
 // Some things helpful to controls
-unsigned previousTime, currentTime, deltaTime; // Used to regulate controls time step
+//unsigned previousTime, currentTime, deltaTime; // Used to regulate controls time step
 
 // prototypes
-void mainLoop(PacketReceiver& receiver, Camera& camera);
+void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls);
 void initPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread);
 void stopPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread);
 void initRegistration(RegistrationThreadData& rtd, SDL_Thread** registrationThread);
@@ -85,7 +76,6 @@ bool flagIsValid(char flag);
 void checkOptionInput(char &input, PacketReceiver &receiver, int option);
 int handleCommandLineFlags(int argc, char* argv[], PacketReceiver& receiver);
 int initGraphics(Camera& camera);
-int handleControls(PacketReceiver& receiver, Camera& camera);
 int listeningThreadFunction(void* listeningThreadData);
 int registrationThreadFunction(void* arg);
 int imuThreadFunction(void* arg);
@@ -113,37 +103,40 @@ int main(int argc, char* argv[]) {
     initKernel();
     // Camera parameters: Vertical FOV, Near Plane, Far Plane, Aspect, Theta, Phi, Distance, DistMin, DistMax
     Camera camera(1.0, 10.0f, 100000.0, 1, 0.0, 1.2, 2000.0, 100.f, 10000.f);
+    Controls controls;
 
     if (receiver.isOptionEnabled(GRAPHICS)) {
         if (initGraphics(camera) == 1) {
             return 1;
         }
+        controls.init();
+    } else {
+        initImu(itd, &imuThread);
     }
 
     if (receiver.isOptionEnabled(STREAM)) {
         initPacketHandling(ltd, &packetListeningThread);
         initRegistration(rtd, &registrationThread);
-    } else {
-        initImu(itd, &imuThread);
     }
 
     /* Begin the main loop on this thread: */
-    mainLoop(receiver, camera);
+    mainLoop(receiver, camera, controls);
 
     if (receiver.isOptionEnabled(STREAM)) {
         stopPacketHandling(ltd, &packetListeningThread);
         stopRegistration(rtd, &registrationThread);
-    } else {
+    }
+
+    if ( ! receiver.isOptionEnabled(GRAPHICS)) {
         stopImu(itd, &imuThread);
     }
 
     return 0;
 }
 
-void mainLoop(PacketReceiver& receiver, Camera& camera) {
+void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls) {
 
     bool loop = true;
-    previousTime = SDL_GetTicks();
 
     while (loop) {
         /**************************** HANDLE INCOMING POINTS ********************************/
@@ -154,7 +147,7 @@ void mainLoop(PacketReceiver& receiver, Camera& camera) {
 
         if (receiver.isOptionEnabled(GRAPHICS)) {
             /**************************** HANDLE CONTROLS ********************************/
-            int timeToQuit = handleControls(receiver, camera); // returns non-zero if quit events happen
+            int timeToQuit = controls.handleControls(receiver, camera, gridDrawer); // returns non-zero if quit events happen
             if (timeToQuit) {
                 loop = false;
             }
@@ -213,75 +206,6 @@ int imuThreadFunction(void* arg) {
     ImuThreadData* idt = (ImuThreadData*) arg;
     while (!idt->imuQuit) {
         idt->imu->printOrientation();
-    }
-    return 0;
-}
-
-int handleControls(PacketReceiver& receiver, Camera& camera) {
-    /**************************** HANDLE EVENTS *********************************/
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) { // process all accumulated events
-        switch(event.type) {
-            case SDL_MOUSEMOTION:
-                if (event.button.button & SDL_BUTTON_RMASK) {
-                    camera.rotatePhi(event.motion.yrel * MOUSE_SENSITIVITY_Y);
-                    camera.rotateTheta(event.motion.xrel * MOUSE_SENSITIVITY_X);
-                } else if (event.button.button & SDL_BUTTON_LMASK) {
-                    camera.moveBackward(-event.motion.yrel * MOUSE_SENSITIVITY_PAN * camera.lookingUpOrDown());
-                    camera.moveLeft(event.motion.xrel * MOUSE_SENSITIVITY_PAN);
-                }
-                break;
-            case SDL_MOUSEBUTTONDOWN:
-                if (event.button.button == SDL_BUTTON_LEFT && !(event.button.button & SDL_BUTTON_RMASK)) {
-
-                }
-                else if (event.button.button == SDL_BUTTON_RIGHT ) {
-
-                }
-                break;
-            case SDL_MOUSEWHEEL:
-                camera.zoom(event.wheel.y * MOUSE_SENSITIVITY_WHEEL);
-                break;
-            case SDL_KEYDOWN:
-                switch (event.key.keysym.sym) {
-                    case SDLK_ESCAPE:
-                        return 1;
-                    case SDLK_F12:
-                        gridDrawer.takeScreenShot();
-                    default:
-                        break;
-                }
-                break;
-            case SDL_QUIT:
-                std::cout << "Received Quit Event.\n";
-                return 1;
-            default:
-                break;
-        }
-    }
-    /**************************** HANDLE KEY STATE *********************************/
-    // Determine the time step since last time
-    currentTime = SDL_GetTicks();
-    deltaTime = currentTime - previousTime;
-    previousTime = currentTime;
-    // Get current keyboard state ( this is used for smooth controls rather than key press event controls above )
-    const Uint8* keyStates = SDL_GetKeyboardState(NULL);
-    float keyRotate = KEY_ROTATE_SENSITIVITY * deltaTime;
-    float keyMove = KEY_MOVE_SENSITIVITY * deltaTime;
-    if (keyStates[SDL_SCANCODE_W]) {
-        camera.moveBackward(-keyMove);
-    }
-    if (keyStates[SDL_SCANCODE_S]) {
-        camera.moveBackward(keyMove);
-    }
-    if (keyStates[SDL_SCANCODE_A]) {
-        camera.moveLeft(keyMove);
-    }
-    if (keyStates[SDL_SCANCODE_D]) {
-        camera.moveLeft(-keyMove);
-    }
-    if (keyStates[SDL_SCANCODE_I]) {
-        receiver.increaseNumPacketsToRead(1);
     }
     return 0;
 }
@@ -367,7 +291,6 @@ int initGraphics(Camera& camera) {
     camera.setAspect(graphics.getAspectRatio());
     gridDrawer.init(&grid, &camera, 0, log);
     std::cout << log.str();
-
     return 0;
 }
 

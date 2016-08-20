@@ -9,7 +9,7 @@
 
 #define CHECK_ERROR(context) GLenum error = glGetError(); if (error != GL_NO_ERROR) { fprintf(stderr, context " 0x%04x\n", error); }
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     int ScreenShotTaker::init(uint32_t width, uint32_t height) {
 

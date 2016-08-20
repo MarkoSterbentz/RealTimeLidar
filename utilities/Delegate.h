@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     // As will be seen below, the Delegate template class is formatted so:
     // Given a method that returns float and takes an int and a char, a delegate type would be:

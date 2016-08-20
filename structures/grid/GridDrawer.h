@@ -24,7 +24,7 @@
 #define SCREEN_SHOT_W 4000
 #define SCREEN_SHOT_H 2000
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     template<class P>
     struct GridDrawer {

@@ -9,7 +9,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
     class Camera {
         float fovY, near, far, aspect;
         float theta, thetaTarget, thetaSpeed;

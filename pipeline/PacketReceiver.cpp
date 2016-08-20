@@ -5,7 +5,7 @@
 #include <sstream>
 #include "PacketReceiver.h"
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     PacketReceiver::PacketReceiver() : cmdOptions{} {
 

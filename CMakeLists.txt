@@ -38,13 +38,12 @@ set(RTL_LIBS ${RTL_LIBS} BNO055)
 
 add_subdirectory(fileIO)
 add_subdirectory(gui)
-add_subdirectory(grid)
 add_subdirectory(pipeline)
-add_subdirectory(quadTree)
+add_subdirectory(structures)
 add_subdirectory(utilities)
 
 include_directories(${RTL_INCLUDE_DIRS})
-set(RTL_SOURCE_FILES ${RTL_SOURCE_FILES} main.cpp )
+set(RTL_SOURCE_FILES ${RTL_SOURCE_FILES} main.cpp)
 
 add_executable(${PROJECT_NAME} ${RTL_SOURCE_FILES})
 

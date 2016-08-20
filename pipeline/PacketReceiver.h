@@ -32,7 +32,7 @@
 #define DATABUFLEN 1249  //size of the data packet
 #define POSBUFLEN 554   // size of the position packet
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     enum StreamingMedium {
         VELODYNE, INPUTFILE
