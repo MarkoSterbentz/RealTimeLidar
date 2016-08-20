@@ -62,7 +62,7 @@ struct ImuThreadData {
 Grid<CartesianPoint> grid(-5000.f, 5000.f, -5000.f, 5000.f, 10, 10, MAX_POINTS_IN_GRID);
 GridDrawer<CartesianPoint> gridDrawer;
 
-// The graphics backend
+// The gui backend
 Graphics graphics;
 
 // This is a thread safe queue designed for one producer and one consumer
@@ -447,7 +447,7 @@ int handleCommandLineFlags(int argc, char* argv[], PacketReceiver& receiver) {
 
     /* For the necessary options that the user did not specify with flags, prompt. */
     char input;
-    /* Check for graphics flag: */
+    /* Check for gui flag: */
     while (!receiver.isOptionSpecified(GRAPHICS)) {
         std::cout << "Enable graphical display? (y/n) ";
         checkOptionInput(input, receiver, GRAPHICS);

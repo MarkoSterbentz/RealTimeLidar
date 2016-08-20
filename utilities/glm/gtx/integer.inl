@@ -43,7 +43,7 @@ namespace glm
 		return result;
 	}
 
-	// sqrt: From Christopher J. Musial, An integer square root, graphics Gems, 1990, page 387
+	// sqrt: From Christopher J. Musial, An integer square root, gui Gems, 1990, page 387
 	GLM_FUNC_QUALIFIER int sqrt(int x)
 	{
 		if(x <= 1) return x;

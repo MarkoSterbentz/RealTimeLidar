@@ -39,7 +39,7 @@ MatrixBase<Derived>::eulerAngles(Index a0, Index a1, Index a2) const
   using std::atan2;
   using std::sin;
   using std::cos;
-  /* Implemented from graphics Gems IV */
+  /* Implemented from gui Gems IV */
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Derived,3,3)
 
   Matrix<Scalar,3,1> res;

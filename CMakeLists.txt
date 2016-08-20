@@ -37,7 +37,7 @@ include_directories(bno055_uartSimple)
 set(RTL_LIBS ${RTL_LIBS} BNO055)
 
 add_subdirectory(fileIO)
-add_subdirectory(graphics)
+add_subdirectory(gui)
 add_subdirectory(grid)
 add_subdirectory(pipeline)
 add_subdirectory(quadTree)
