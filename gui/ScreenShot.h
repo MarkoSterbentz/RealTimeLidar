@@ -9,7 +9,7 @@
 #include <SDL.h>
 #include "Camera.h"
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
     struct ScreenShotTaker {
         GLuint fbo, colorBuffer, depthBuffer;
         uint32_t width, height;

@@ -7,7 +7,7 @@
 
 #include "Bno055Interface.h"
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
     class ImuReader {
         bno055::Bno055Interface bno055;
     public:

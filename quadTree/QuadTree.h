@@ -43,7 +43,7 @@
 #define D0 x    //dimension 0 (maybe angle)
 #define D1 y    //dimension 1 (maybe azmuth)
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     /*
      * when a point is tested to see where it falls in relation to a square,
@@ -428,6 +428,6 @@ namespace LaserMappingDrone {
         return sstr.str();
     }
 
-}   // namespace LaserMappingDrone
+}   // namespace RealTimeLidar
 
 #endif //LASERMAPPINGDRONE_QUADTREE_H

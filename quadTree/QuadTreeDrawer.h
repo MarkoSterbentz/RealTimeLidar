@@ -16,7 +16,7 @@
 
 #define OPTIMIZATION_THRESHOLD 0.05f
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     struct QuadTreeDrawer {
 

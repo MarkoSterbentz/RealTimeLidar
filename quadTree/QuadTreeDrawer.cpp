@@ -6,7 +6,7 @@
 #include "QuadTreeDrawer.h"
 #include "LoadShaders.h"
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     std::string QuadTreeDrawer::init(float aspectRatio) {
 

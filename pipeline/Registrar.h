@@ -13,7 +13,7 @@
 
 #include "ICP.h"
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     template <class P>
     class Registrar {

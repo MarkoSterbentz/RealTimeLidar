@@ -11,7 +11,7 @@
 #include "Delegate.h"
 #include "Kernel.h"
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     /*******************    CELL CLASS HEADER    *************************/
 
@@ -192,6 +192,6 @@ namespace LaserMappingDrone {
         return (int)((x - xMin) * xIndexFactor) + (int)((y - yMin) * yIndexFactor) * xRes;
     }
 
-}   // namespace LaserMappingDrone
+}   // namespace RealTimeLidar
 
 #endif //LASERMAPPINGDRONE_GRID_H

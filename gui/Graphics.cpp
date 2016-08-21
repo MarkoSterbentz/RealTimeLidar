@@ -25,7 +25,7 @@
 #define USE_BACKFACE_CULLING
 //#define DEBUG_DRIVERS
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     Graphics::Graphics() {
         xRes = RESOLUTION_X;
@@ -225,4 +225,4 @@ namespace LaserMappingDrone {
         }
     }
 
-}   // namespace LaserMappingDrone
+}   // namespace RealTimeLidar

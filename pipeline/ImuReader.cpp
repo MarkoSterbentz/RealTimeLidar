@@ -8,7 +8,7 @@
 
 #define BNO055_DEVICE_FILE "/dev/ttyS0"
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
 
     bool ImuReader::init() {
         bno055.init(BNO055_DEVICE_FILE);

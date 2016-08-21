@@ -5,7 +5,7 @@
 #include <iostream>
 #include "Camera.h"
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
     Camera::Camera(float fovY, float near, float far, float aspect,
                    float theta, float phi, float dist, float distMin, float distMax) :
                     fovY(fovY), near(near), far(far), aspect(aspect),

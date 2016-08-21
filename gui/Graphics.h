@@ -11,7 +11,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
-namespace LaserMappingDrone {
+namespace RealTimeLidar {
     class Graphics {
         SDL_Window* pWindow;                // The SDL window
         SDL_GLContext context;              // The openGL context
