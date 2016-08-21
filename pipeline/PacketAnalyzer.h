@@ -40,6 +40,7 @@ namespace RealTimeLidar {
 /******************ANALYZER HEADER*********************/
     class PacketAnalyzer {
     private:
+
         unsigned char* currentPacket;
 
         CartesianPoint getSingleXYZ(float distance, float elevationAngle, float azimuth);
@@ -52,7 +53,7 @@ namespace RealTimeLidar {
 
         ChannelInfo extractChannelInfo(unsigned int chIndex);
 
-        void interpolateSecondAzimuth(DataPacketInfo& packetInfo);
+        void interpolateSecondAzimuth(DataPacketInfo &packetInfo);
 
         float calculateFirstAzimuth(unsigned int azIndex);
 

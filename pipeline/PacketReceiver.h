@@ -2,7 +2,7 @@
 #define PACKETANALYZER_PACKETRECEIVER_H
 
 /**
- * Packet Receiver | Marko Sterbentz 2/5/2016
+ * Packet Receiver | Marko Sterbentz | 2/5/2016
  * This class will receieve/read data from outside the application.
  * Supported sources include: VeloDyne VLP-16, binary data file
  *
@@ -26,6 +26,8 @@
 #include <string>
 #include <stdexcept>
 
+#include "StreamingMedium.h"
+
 #define DATAPORT "2368"    // the Data Packet is broadcasted to this port
 #define POSITIONPORT "8308" // the Position Packet is broadcasted to this port
 
@@ -33,41 +35,20 @@
 #define POSBUFLEN 554   // size of the position packet
 
 namespace RealTimeLidar {
-
-    enum StreamingMedium {
-        VELODYNE, INPUTFILE
-    };
-    enum OptionsState {
-        OFF = -1, UNKNOWN = 0, ON = 1
-    };
-    enum Options {
-        GRAPHICS = 0, STREAM = 1, WRITE = 2, FORWARD = 3
-    };
-
     class PacketReceiver {
     private:
         std::ofstream outputFileStream;
         std::ifstream inputFile;
-
         std::string outputDataFileName;
         std::string inputDataFileName;
         int sockfd;
+        int numPacketsToRead;
         unsigned char dataBuf[DATABUFLEN];
         unsigned char posBuf[POSBUFLEN];
         std::queue<unsigned char*> packetQueue;
+        StreamingMedium streamMedium;
 
         void readSingleDataPacketFromFile();
-
-        int cmdOptions[4];
-
-        StreamingMedium streamMedium;
-        int numPacketsToRead;
-
-        int extractIntegerInput(std::string input);
-
-        void getStreamDevice();                                                     // NEEDS TO BE RENAMED
-        int getNumberOfPacketsToRead();                                             // NEEDS TO BE RENAMED
-        std::string getInputFileName();                                             // NEEDS TO BE RENAMED
 
     public:
         PacketReceiver();
@@ -79,24 +60,20 @@ namespace RealTimeLidar {
         void writePacketToFile(unsigned char* packet);
         bool endOfInputDataFile();
         void readDataPacketsFromFile(int numPackets);
-
         unsigned long getPacketQueueSize();
         unsigned char* getNextQueuedPacket();
         void popQueuedPacket();
-
-        std::string getOptDesc(int option);
-        void enableOption(int option);
-        void disableOption(int option);
         void increaseNumPacketsToRead(int num);
-        long getFileSize(std::string fileName);
 
         /* Getters for private variables: */
-        bool isOptionSpecified(int option);
-        bool isOptionEnabled(int option);
+        void setStreamMedium(StreamingMedium medium);
         StreamingMedium getStreamMedium();
+        void setNumPacketsToRead(int num);
         int getNumPacketsToRead();
+        void setOutputDataFileName(std::string name);
+        std::string getOutputDataFileName();
+        void setInputDataFileName(std::string name);
+        std::string getInputDataFileName();
     };
-
 }
-
 #endif //PACKETANALYZER_PACKETRECEIVER_H

@@ -11,5 +11,6 @@ set( RTL_INCLUDE_DIRS ${RTL_INCLUDE_DIRS} ${DIR} PARENT_SCOPE )
 set( RTL_SOURCE_FILES ${RTL_SOURCE_FILES}
         ${DIR}/Delegate.h
         ${DIR}/nanoflann.hpp
+        ${DIR}/ArgumentHandler.cpp ${DIR}/ArgumentHandler.h
         PARENT_SCOPE
         )

@@ -36,6 +36,7 @@ add_subdirectory(bno055_uartSimple)
 include_directories(bno055_uartSimple)
 set(RTL_LIBS ${RTL_LIBS} BNO055)
 
+add_subdirectory(enums)
 add_subdirectory(fileIO)
 add_subdirectory(gui)
 add_subdirectory(pipeline)

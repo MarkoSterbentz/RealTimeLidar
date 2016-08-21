@@ -7,7 +7,7 @@
 
 namespace RealTimeLidar {
 
-    PacketReceiver::PacketReceiver() : cmdOptions{} {
+    PacketReceiver::PacketReceiver() {
 
     };
 
@@ -150,142 +150,45 @@ namespace RealTimeLidar {
         }
     }
 
-    std::string PacketReceiver::getOptDesc(int option) {
-        switch(option) {
-            case GRAPHICS:
-                return "Graphical Display";
-            case STREAM:
-                return "Data Streaming";
-            case WRITE:
-                return "Data Writing";
-            case FORWARD:
-                return "Data Forwarding";
-            default:
-                return "Unknown Option";
-        }
-    }
-
-    void PacketReceiver::enableOption(int option) {
-        cmdOptions[option] = ON;
-        std::cout << getOptDesc(option) << " ENABLED." << std::endl;
-
-        // extra stuff that needs to be done in special cases
-        if (option == WRITE) {
-            std::cout << "What would you like to name the output data file? ";
-            std::getline(std::cin, outputDataFileName);
-            outputDataFileName.append(".dat");
-            std::cout << "Data will be written to: " << outputDataFileName << std::endl;
-        } else
-        if (option == STREAM) {
-            getStreamDevice();
-        }
-    }
-
-    void PacketReceiver::disableOption(int option) {
-        cmdOptions[option] = OFF;
-        std::cout << getOptDesc(option) << " DISABLED." << std::endl;
-    }
-
-    /* Prompts the user for the desired method of streaming. */
-    void PacketReceiver::getStreamDevice() {
-        int inputInt = -1;
-        while (inputInt == -1) {
-            std::cout << "Select the device you are streaming data from (enter the associated number):" << std::endl;
-            std::cout << "1. Velodyne" << std::endl;
-            std::cout << "2. File" << std::endl;
-            std::string input;
-            std::getline(std::cin, input);
-            inputInt = extractIntegerInput(input);
-            switch (inputInt) {
-                case (1): {
-                    streamMedium = VELODYNE;
-                    std::cout << "Selected streaming medium: VELODYNE." << std::endl;
-                    break;
-                }
-                case (2): {
-                    streamMedium = INPUTFILE;
-                    std::cout << "Selected streaming medium: FILE." << std::endl;
-                    inputDataFileName = getInputFileName();
-                    numPacketsToRead = getNumberOfPacketsToRead();
-                    break;
-                }
-                default: {
-                    std::cout << "Invalid input. Please select a valid number." << std::endl;
-                    inputInt = -1;
-                    break;
-                }
-            }
-        }
-    }
-
-    /* Prompts user for the desired number of packets to be read from the input file. */
-    int PacketReceiver::getNumberOfPacketsToRead() {
-        std::cout << "How many packets should be read in from this file?" << std::endl;
-        std::string input;
-        std::getline(std::cin, input);
-        int count = extractIntegerInput(input);
-        if (count < 1) {
-            count = 0;
-        }
-        std::cout << count << " packets will be read from the file." << std::endl;
-        return count;
-    }
-
-    /* Converts a string to an int with necessary exception handling. */
-    int PacketReceiver::extractIntegerInput(std::string input) {
-        int ret = -1;
-        try {
-            ret = std::stoi(input);
-        } catch (const std::invalid_argument &ia) {
-            std::cout << "Invalid input. Please select a valid number." << std::endl;
-        } catch (const std::out_of_range &oor) {
-            std::cout << "Input was out of range. Please select a valid number." << std::endl;
-        }
-        return ret;
-    }
-
-    /* Prompts the user for the input file they would like to use. */
-    std::string PacketReceiver::getInputFileName() {
-        std::string name = "";
-        std::cout << "Please enter the name of the file to use (be sure to include .dat): " << std::endl;
-        std::getline(std::cin, name);
-        long numBytes = getFileSize(name);
-        std::cout << "The file \"" << name << "\" (" << numBytes << " bytes | " << numBytes / 1206 << " packets) " <<
-        "will be used as input." << std::endl;
-        return name;
-    }
-
-    /* Returns the size of the given file in bytes. */
-    long PacketReceiver::getFileSize(std::string fileName) {
-        std::ifstream in(fileName, std::ios::binary | std::ios::ate);
-        return in.tellg();
-    }
-
     /* Used to read more of the input data file. */
     void PacketReceiver::increaseNumPacketsToRead(int num) {
         numPacketsToRead += num;
     }
 
     /*********************************************************************************
-     * GETTERS FOR PACKETRECEIVER
+     * GETTERS AND SETTERS FOR PACKETRECEIVER
      ********************************************************************************/
-
-    bool PacketReceiver::isOptionSpecified(int option) {
-        return (cmdOptions[option] != UNKNOWN);
-    }
-
-    bool PacketReceiver::isOptionEnabled(int option) {
-        return (cmdOptions[option] >= ON);
+    void PacketReceiver::setStreamMedium(StreamingMedium medium) {
+        this->streamMedium = medium;
     }
 
     StreamingMedium PacketReceiver::getStreamMedium() {
         return streamMedium;
     }
 
+    void PacketReceiver::setNumPacketsToRead(int num) {
+        numPacketsToRead = num;
+    }
+
     int PacketReceiver::getNumPacketsToRead() {
         return numPacketsToRead;
     }
 
+    void PacketReceiver::setOutputDataFileName(std::string name) {
+        outputDataFileName = name;
+        outputDataFileName.append(".dat");
+    }
+    std::string PacketReceiver::getOutputDataFileName() {
+        return outputDataFileName;
+    }
+
+    void PacketReceiver::setInputDataFileName(std::string name) {
+        inputDataFileName = name;
+    }
+
+    std::string PacketReceiver::getInputDataFileName() {
+        return inputDataFileName;
+    }
 }
 
 
