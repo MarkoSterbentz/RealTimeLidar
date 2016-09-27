@@ -6,8 +6,9 @@
 #define REALTIMELIDAR_IMUDATA_H
 
 namespace RealTimeLidar {
-    struct IMUData {
-        float yaw, pitch, roll;
+    struct ExtractedIMUData {
+        float orient[3];
+        float linAccel[3];
     };
 }
 #endif //REALTIMELIDAR_IMUDATA_H

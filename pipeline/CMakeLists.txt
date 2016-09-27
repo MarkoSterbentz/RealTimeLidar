@@ -12,5 +12,6 @@ set( RTL_SOURCE_FILES ${RTL_SOURCE_FILES}
         ${DIR}/ICP.h
         ${DIR}/ImuReader.cpp ${DIR}/ImuReader.h
         ${DIR}/IMUPacketTransmitter.cpp ${DIR}/IMUPacketTransmitter.h
+        ${DIR}/VelodynePacketTransmitter.cpp ${DIR}/VelodynePacketTransmitter.h
         ${DIR}/Registrar.h
         PARENT_SCOPE)

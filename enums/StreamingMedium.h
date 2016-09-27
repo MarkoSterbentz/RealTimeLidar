@@ -11,7 +11,7 @@
 #define VELODYNE_PACKET_SIZE 1249
 /* IMU DEFINES */
 #define IMU_PORT_NUMBER 0       //TODO: Determine the IMU transmission portNumber
-#define IMU_PACKET_SIZE 12      //TODO: Double check actual packetSize
+#define IMU_PACKET_SIZE 24
 
 enum StreamingMedium {
     VELODYNE, IMU, INPUTFILE

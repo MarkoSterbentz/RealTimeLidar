@@ -12,7 +12,9 @@ namespace RealTimeLidar {
     private:
 
     public:
-        IMUData getIMUData();
+        IMUPacketAnalyzer();
+        ~IMUPacketAnalyzer();
+        ExtractedIMUData extractIMUData();
     };
 }
 #endif //REALTIMELIDAR_IMUPACKETANALYZER_H

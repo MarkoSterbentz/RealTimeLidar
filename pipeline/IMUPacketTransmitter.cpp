@@ -37,8 +37,11 @@ namespace RealTimeLidar {
         }
         return true;
     }
-    /* Creates a packet of the format, heading, roll, pitch, linAccel1, linAccel2, linAccel3. */
+
+    /* Creates a packet of the format: heading, roll, pitch, linAccel1, linAccel2, linAccel3. */
     void IMUPacketTransmitter::packData(bno055::ImuData_f data, unsigned char *packetOut) {
+        packetOut = new unsigned char[PACKET_SIZE];
+
         // extract the needed data
         bno055::Vec3_f orientData = data.names.orient;
         bno055::Vec3_f linAccelData = data.names.linAccel;
@@ -46,7 +49,7 @@ namespace RealTimeLidar {
         // write the bytes
         for(int i = 0; i < 3; ++i) {
             ((float*) packetOut)[i] = orientData[i];
-            ((float*) packetOut)[i] = linAccelData[i];
+            ((float*) packetOut)[i+3] = linAccelData[i];
         }
     }
 
@@ -85,11 +88,11 @@ namespace RealTimeLidar {
         bno055::ImuData_16 data;
         if (bno055.queryImuData(&data)) {
             // create the packet
-            unsigned char newPacket[24];
+            unsigned char *newPacket = 0;
             packData(data.toFloats(), newPacket);
 
             // send the packet on transmissionPort
-            if ((numBytes = sendto(sockfd, newPacket, 24, 0,
+            if ((numBytes = sendto(sockfd, newPacket, PACKET_SIZE, 0,
                                    p->ai_addr, p->ai_addrlen)) == -1) {
                 perror("talker: sendto");
                 exit(1);
