@@ -13,7 +13,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
-#include <PacketAnalyzer.h>
+#include <PacketAnalyzer/PacketAnalyzer.h>
 #include "Grid.h"
 #include "Camera.h"
 #include "LoadShaders.h"

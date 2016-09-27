@@ -1,6 +1,3 @@
-add_subdirectory(PacketAnalyzer)
-add_subdirectory(PacketReceiver)
-
 # set DIR to point to current directory (relative to top level)
 set( DIR ${CMAKE_CURRENT_LIST_DIR} )
 
@@ -9,8 +6,8 @@ set( RTL_INCLUDE_DIRS ${RTL_INCLUDE_DIRS} ${DIR} PARENT_SCOPE )
 
 # include all headers/source in current directory
 set( RTL_SOURCE_FILES ${RTL_SOURCE_FILES}
-        ${DIR}/ICP.h
-        ${DIR}/ImuReader.cpp ${DIR}/ImuReader.h
-        ${DIR}/IMUPacketTransmitter.cpp ${DIR}/IMUPacketTransmitter.h
-        ${DIR}/Registrar.h
+        ${DIR}/PacketAnalyzer.cpp ${DIR}/PacketAnalyzer.h
+        ${DIR}/BasePacketAnalyzer.cpp ${DIR}/BasePacketAnalyzer.h
+        ${DIR}/DataPacketAnalyzer.cpp ${DIR}/DataPacketAnalyzer.h
+        ${DIR}/IMUPacketAnalyzer.cpp ${DIR}/IMUPacketAnalyzer.h
         PARENT_SCOPE)

@@ -5,7 +5,7 @@
 #ifndef REALTIMELIDAR_CONTROLS_H
 #define REALTIMELIDAR_CONTROLS_H
 
-#include "PacketReceiver.h"
+#include "PacketReceiver/PacketReceiver.h"
 #include "Camera.h"
 #include "GridDrawer.h"
 #include "CartesianPoint.h"

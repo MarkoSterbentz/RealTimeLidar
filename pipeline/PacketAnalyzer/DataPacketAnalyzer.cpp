@@ -1,29 +1,24 @@
 //
-// Created by marko sterbentz on 1/21/16.
+// Created by marko on 9/11/16.
 //
 
-#include "PacketAnalyzer.h"
-
+#include "DataPacketAnalyzer.h"
 namespace RealTimeLidar {
 
-/* PacketAnalyzer Constructor */
-    PacketAnalyzer::PacketAnalyzer() {
+/* DataPacketAnalyzer Constructor */
+    DataPacketAnalyzer::DataPacketAnalyzer() {
 
     }
 
 /* PacketAnalyzer Destructor */
-    PacketAnalyzer::~PacketAnalyzer() {
+    DataPacketAnalyzer::~DataPacketAnalyzer() {
 
-    }
-
-    void PacketAnalyzer::loadPacket(unsigned char* newPacket) {
-        currentPacket = newPacket;
     }
 
 /*****************************************************************************
  * METHODS FOR EXTRACTING RAW DATA FROM THE PACKET
  *****************************************************************************/
-    DataPacketInfo PacketAnalyzer::extractDataPacketInfo() {
+    DataPacketInfo DataPacketAnalyzer::extractDataPacketInfo() {
         DataPacketInfo extractedInfo;
         // first 42 bytes are header
         //unsigned int packetIndex = 42;
@@ -44,23 +39,7 @@ namespace RealTimeLidar {
         return extractedInfo;
     }
 
-    PositionPacketInfo PacketAnalyzer::extractPositionPacketInfo() {
-        PositionPacketInfo extractedInfo;
-        // first 42 bytes are ethernet header
-
-        // next 198 bytes are unused
-
-        // next 4 bytes are timestamp
-
-        // next 4 bytes are unused
-
-        // next 72 bytes are NMEA $GPRMC sentence
-
-        // next 234 bytes are unused
-        return extractedInfo;
-    }
-
-    DataBlockInfo PacketAnalyzer::extractDataBlockInfo(unsigned int dbIndex) {
+    DataBlockInfo DataPacketAnalyzer::extractDataBlockInfo(unsigned int dbIndex) {
         DataBlockInfo db;
         // first 2 bytes are the flag; can skip them
         dbIndex += 2;
@@ -75,7 +54,7 @@ namespace RealTimeLidar {
         return db;
     }
 
-    ChannelInfo PacketAnalyzer::extractChannelInfo(unsigned int chIndex) {
+    ChannelInfo DataPacketAnalyzer::extractChannelInfo(unsigned int chIndex) {
         ChannelInfo ci;
         ci.distance = calculateDistance(chIndex);
         ci.reflectivity = calculateReflectivity(chIndex + 2);
@@ -89,7 +68,7 @@ namespace RealTimeLidar {
 /* Returns the azimuth contained in two bytes
  * Note: This will only return the azimuth for the first firing sequence.
  * Note: Azimuth values range from 0 to 359.99 degrees */
-    float PacketAnalyzer::calculateFirstAzimuth(unsigned int azIndex) {
+    float DataPacketAnalyzer::calculateFirstAzimuth(unsigned int azIndex) {
         // reverse the bytes and combine into 2 byte uint
         unsigned int byteCombo = currentPacket[azIndex + 1];
         byteCombo = byteCombo << 8;
@@ -98,7 +77,7 @@ namespace RealTimeLidar {
     }
 
 // also calculating average interpolation amount in order to calculate interpolation for last data block's second azimuth
-    void PacketAnalyzer::interpolateSecondAzimuth(DataPacketInfo& packet) {
+    void DataPacketAnalyzer::interpolateSecondAzimuth(DataPacketInfo& packet) {
         float averageInterpolation = 0.0;
         for (int i = 0; i < 11; ++i) {
             float startAzimuth = packet.blocks[i].azimuth1;
@@ -121,20 +100,19 @@ namespace RealTimeLidar {
             packet.blocks[11].azimuth2 -= 360;
     }
 
-    float PacketAnalyzer::calculateDistance(unsigned int distIndex) {
+    float DataPacketAnalyzer::calculateDistance(unsigned int distIndex) {
         unsigned int byteCombo = currentPacket[distIndex + 1];
         byteCombo = byteCombo << 8;
         byteCombo = byteCombo | currentPacket[distIndex];
         return (float) (byteCombo * 2);
     }
 
-    unsigned char PacketAnalyzer::calculateReflectivity(unsigned int refIndex) {
+    unsigned char DataPacketAnalyzer::calculateReflectivity(unsigned int refIndex) {
         return currentPacket[refIndex];
     }
 
 // timestamp is given in microseconds, then converted to seconds
-    float PacketAnalyzer::calculateTimestamp(
-            unsigned int tsIndex) {            // NEED TO CALCULATE OFFSETS AND ADD TO THE TIME
+    float DataPacketAnalyzer::calculateTimestamp(unsigned int tsIndex) {  // TODO: CALCULATE OFFSETS AND ADD TO THE TIME
         unsigned int byteCombo = currentPacket[tsIndex];
         for (int i = 1; i < 4; ++i) {
             byteCombo = byteCombo << 8;
@@ -145,7 +123,7 @@ namespace RealTimeLidar {
 
 // first byte is return mode | second byte is sensor model key
 // 37 = strongest return | 38 = last return | 39 = dual return
-    unsigned char PacketAnalyzer::calculateReturnMode(unsigned int retIndex) {
+    unsigned char DataPacketAnalyzer::calculateReturnMode(unsigned int retIndex) {
         return currentPacket[retIndex];
     }
 
@@ -153,7 +131,7 @@ namespace RealTimeLidar {
  * METHODS FOR INTERPRETING EXTRACTED DATA
  *****************************************************************************/
 /* Returns the CartesianPoint values for the data in the packet. */
-    std::vector<CartesianPoint> PacketAnalyzer::getCartesianPoints() {
+    std::vector<CartesianPoint> DataPacketAnalyzer::getCartesianPoints() {
         float laserElevationAngles[] = {-15, 1, -13, 3, -11, 5, -9, 7, -7, 9, -5, 11, -3, 13, -1, 15};
         DataPacketInfo data = this->extractDataPacketInfo();
         std::vector<CartesianPoint> cartesianPoints;
@@ -173,38 +151,11 @@ namespace RealTimeLidar {
                                          data.blocks[i].azimuth2));
             }
         }
-        /* half-view code */
-        /*for(int i = 0; i < 12; ++i) {
-            // first firing sequence
-            for(int j = 0; j < 16; ++j) {
-                if (data.blocks[i].channels[j].distance > 0) // throw out 0 points
-                    if (data.blocks[i].azimuth1 < 90 || data.blocks[i].azimuth1 > 270)
-                        cartesianPoints.push_back(getSingleXYZ(data.blocks[i].channels[j].distance,
-                                                               laserElevationAngles[j], data.blocks[i].azimuth1));
-            }
-            // second firing sequence
-            for(int j = 16; j < 32; ++j) {
-                if (data.blocks[i].channels[j].distance > 0) // throw out 0 points
-                    if (data.blocks[i].azimuth2 < 90 || data.blocks[i].azimuth2 > 270)
-                        cartesianPoints.push_back(getSingleXYZ(data.blocks[i].channels[j].distance,
-                                                               laserElevationAngles[j%16], data.blocks[i].azimuth2));
-            }
-        }*/
-        /* Demo Code: */
-        // grabbing a single data point from each firing sequence for speed/testing purposes
-//    for(int i = 0; i < 1; ++i) {
-//        // first firing sequence
-//        for(int j = 1; j < 2; ++j) {
-//            if (data.blocks[i].channels[j].distance > 0) // throw out 0 points
-//                cartesianPoints.push_back(getSingleXYZ(data.blocks[i].channels[j].distance, laserElevationAngles[j], data.blocks[i].azimuth1));
-//        }
-//    }
-
         return cartesianPoints;
     }
 
 /* VeloDyne Documentation: distance == R | elevationAngle == omega | azimuth == alpha */
-    CartesianPoint PacketAnalyzer::getSingleXYZ(float distance, float elevationAngle, float azimuth) {
+    CartesianPoint DataPacketAnalyzer::getSingleXYZ(float distance, float elevationAngle, float azimuth) {
         CartesianPoint p;
         // convert angles to radians
         elevationAngle = (float) (elevationAngle * RAD_CONVERSION);

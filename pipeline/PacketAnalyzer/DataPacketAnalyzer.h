@@ -1,20 +1,19 @@
-#ifndef LASERMAPPINGDRONE_PACKETANALYZER_H
-#define LASERMAPPINGDRONE_PACKETANALYZER_H
+//
+// Created by marko on 9/11/16.
+//
 
-/* PACKET ANALYZER | Marko Sterbentz
- * This class is designed to take in a packet or series of packets output
- * from the VeloDyne VLP-16 and convert it to a variety of useful three
- * dimensional data points.
- */
+#ifndef REALTIMELIDAR_DATAPACKETANALYZER_H
+#define REALTIMELIDAR_DATAPACKETANALYZER_H
 
 #include <cmath>
 #include <iostream>
 #include <vector>
-#include "CartesianPoint.h"
 
+#include "CartesianPoint.h"
+#include "BasePacketAnalyzer.h"
 namespace RealTimeLidar {
 
-#define RAD_CONVERSION 0.01745329251
+    #define RAD_CONVERSION 0.01745329251
 
     struct ChannelInfo {
         float distance;
@@ -33,46 +32,22 @@ namespace RealTimeLidar {
         unsigned returnMode;
     };
 
-    struct PositionPacketInfo {
-        // needs to be implemented...
-    };
-
-/******************ANALYZER HEADER*********************/
-    class PacketAnalyzer {
+    class DataPacketAnalyzer : public BasePacketAnalyzer {
     private:
-
-        unsigned char* currentPacket;
-
         CartesianPoint getSingleXYZ(float distance, float elevationAngle, float azimuth);
-
-        PositionPacketInfo extractPositionPacketInfo();
-
         DataPacketInfo extractDataPacketInfo();
-
         DataBlockInfo extractDataBlockInfo(unsigned int dbIndex);
-
         ChannelInfo extractChannelInfo(unsigned int chIndex);
-
         void interpolateSecondAzimuth(DataPacketInfo &packetInfo);
-
         float calculateFirstAzimuth(unsigned int azIndex);
-
         float calculateTimestamp(unsigned int tsIndex);
-
         float calculateDistance(unsigned int distIndex);
-
         unsigned char calculateReflectivity(unsigned int refIndex);
-
         unsigned char calculateReturnMode(unsigned int retIndex);
-
     public:
-        PacketAnalyzer();
-
-        ~PacketAnalyzer();
-
-        void loadPacket(unsigned char* newPacket);
-
+        DataPacketAnalyzer();
+        ~DataPacketAnalyzer();
         std::vector<CartesianPoint> getCartesianPoints();
     };
 }
-#endif //LASERMAPPINGDRONE_PACKETANALYZER_H
+#endif //REALTIMELIDAR_DATAPACKETANALYZER_H
