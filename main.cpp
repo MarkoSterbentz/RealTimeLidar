@@ -87,8 +87,8 @@ int main(int argc, char* argv[]) {
     ListeningThreadData ltd = { &receiver, &analyzer, false, &argHandler };
     SDL_Thread* packetListeningThread = NULL;
 
-    RegistrationThreadData rtd = { &registrar, false };
-    SDL_Thread* registrationThread = NULL;
+//    RegistrationThreadData rtd = { &registrar, false };
+//    SDL_Thread* registrationThread = NULL;
 
     ImuThreadData itd = { &imuReader, false };
     SDL_Thread* imuThread = NULL;
@@ -107,13 +107,11 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         controls.init();
-    } else {
-        initImu(itd, &imuThread);
     }
 
     if (argHandler.isOptionEnabled(STREAM)) {
         initPacketHandling(ltd, &packetListeningThread);
-        initRegistration(rtd, &registrationThread);
+//        initRegistration(rtd, &registrationThread);
     }
 
     /* Begin the main loop on this thread: */
@@ -121,12 +119,12 @@ int main(int argc, char* argv[]) {
 
     if (argHandler.isOptionEnabled(STREAM)) {
         stopPacketHandling(ltd, &packetListeningThread);
-        stopRegistration(rtd, &registrationThread);
+//        stopRegistration(rtd, &registrationThread);
     }
 
-    if (!argHandler.isOptionEnabled(GRAPHICS)) {
-        stopImu(itd, &imuThread);
-    }
+//    if (!argHandler.isOptionEnabled(GRAPHICS)) {
+//        stopImu(itd, &imuThread);
+//    }
 
     return 0;
 }
@@ -137,7 +135,7 @@ void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls, Argu
     while (loop) {
         /**************************** HANDLE INCOMING POINTS ********************************/
         CartesianPoint p;
-        while (registeredQueue.try_dequeue(p)) {
+        while (rawQueue.try_dequeue(p)) {   // changed from registeredQueue
             grid.addPoint(p);
         }
 
