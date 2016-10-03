@@ -27,7 +27,7 @@
 #include <stdexcept>
 
 #include "StreamingMedium.h"
-
+//TODO: Get rid of these defines. They have been replaced by defines in StreamingMedium.h.
 #define DATAPORT "2368"    // the Data Packet is broadcasted to this port
 #define POSITIONPORT "8308" // the Position Packet is broadcasted to this port
 
@@ -37,43 +37,46 @@
 namespace RealTimeLidar {
     class PacketReceiver {
     private:
-        std::ofstream outputFileStream;
-        std::ifstream inputFile;
-        std::string outputDataFileName;
-        std::string inputDataFileName;
-        int sockfd;
-        int numPacketsToRead;
-        unsigned char dataBuf[DATABUFLEN];
-        unsigned char posBuf[POSBUFLEN];
-        std::queue<unsigned char*> packetQueue;
-        StreamingMedium streamMedium;
+        std::ofstream outputFileStream;                 // network
+        std::ifstream inputFile;                        // file
+        std::string outputDataFileName;                 // network
+        std::string inputDataFileName;                  // file
+        int sockfd;                                     // network
+        int numPacketsToRead;                           // universal
+        unsigned char* dataBuf;                         // universal
+        std::queue<unsigned char*> packetQueue;         // universal
+        StreamingMedium streamMedium;                   // no longer needed
 
-        void readSingleDataPacketFromFile();
+        int packetSize; //(in bytes)                    // universal
+        int portNumber;                                 // network
+
+        void readSingleDataPacketFromFile();            // file
 
     public:
-        PacketReceiver();
-        ~PacketReceiver();
-        void openOutputFile();
-        void openInputFile();
-        int bindSocket();
-        void listenForDataPacket();
-        void writePacketToFile(unsigned char* packet);
-        bool endOfInputDataFile();
-        void readDataPacketsFromFile(int numPackets);
-        unsigned long getPacketQueueSize();
-        unsigned char* getNextQueuedPacket();
-        void popQueuedPacket();
-        void increaseNumPacketsToRead(int num);
+        PacketReceiver();                               // universal
+        PacketReceiver(StreamingMedium medium);
+        ~PacketReceiver();                              // universal
+        void openOutputFile();                          // network
+        void openInputFile();                           // file
+        int bindSocket();                               // network
+        void listenForDataPacket();                     // network
+        void writePacketToFile(unsigned char* packet);  // network
+        bool endOfInputDataFile();                      // file
+        void readDataPacketsFromFile(int numPackets);   // file
+        unsigned long getPacketQueueSize();             // universal
+        unsigned char* getNextQueuedPacket();           // universal
+        void popQueuedPacket();                         // universal
+        void increaseNumPacketsToRead(int num);         // universal
 
         /* Getters for private variables: */
-        void setStreamMedium(StreamingMedium medium);
-        StreamingMedium getStreamMedium();
-        void setNumPacketsToRead(int num);
-        int getNumPacketsToRead();
-        void setOutputDataFileName(std::string name);
-        std::string getOutputDataFileName();
-        void setInputDataFileName(std::string name);
-        std::string getInputDataFileName();
+        void setStreamMedium(StreamingMedium medium);   // universal
+        StreamingMedium getStreamMedium();              // universal
+        void setNumPacketsToRead(int num);              // universal
+        int getNumPacketsToRead();                      // universal
+        void setOutputDataFileName(std::string name);   // network
+        std::string getOutputDataFileName();            // network
+        void setInputDataFileName(std::string name);    // file
+        std::string getInputDataFileName();             // file
     };
 }
 #endif //PACKETANALYZER_PACKETRECEIVER_H

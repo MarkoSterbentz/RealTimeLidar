@@ -11,6 +11,10 @@ namespace RealTimeLidar {
 
     };
 
+    PacketReceiver::PacketReceiver(StreamingMedium medium) {
+        setStreamMedium(medium);
+    }
+
     PacketReceiver::~PacketReceiver() {
         if (outputFileStream.is_open()) {
             outputFileStream.close();
@@ -160,6 +164,22 @@ namespace RealTimeLidar {
      ********************************************************************************/
     void PacketReceiver::setStreamMedium(StreamingMedium medium) {
         this->streamMedium = medium;
+        switch (medium) {
+            case VELODYNE:
+                this->packetSize = VELODYNE_PACKET_SIZE;
+                this->portNumber = VELODYNE_PORT_NUMBER;
+                break;
+            case IMU:
+                this->packetSize = IMU_PACKET_SIZE;
+                this->portNumber = IMU_PORT_NUMBER;
+                break;
+            case INPUTFILE:
+            default:
+                this->packetSize = 0;
+                this->portNumber = 0;
+                break;
+        }
+        this->dataBuf = new unsigned char[this->packetSize];
     }
 
     StreamingMedium PacketReceiver::getStreamMedium() {

@@ -23,7 +23,7 @@ namespace RealTimeLidar {
     class ArgumentHandler {
     private:
         int cmdOptions[4];
-        PacketReceiver* receiver;
+        PacketReceiver* receiver;   // Change to PacketReader
 
         void checkOptionInput(char &input, int option);
         int extractIntegerInput(std::string input);

@@ -1,6 +1,7 @@
 add_library( structures STATIC
-    CartesianPoint.cpp
-    )
+        CartesianPoint.cpp
+        IMUData.cpp
+        )
 
 target_link_libraries( structures
         utilities

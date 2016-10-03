@@ -14,6 +14,7 @@
 #include "ImuReader.h"
 #include "Controls.h"
 #include "ArgumentHandler.h"
+#include "DataPacketAnalyzer.h"
 
 //#define SHOW_NONCONTRIBUTING_POINTS
 #include "Registrar.h"
@@ -36,7 +37,7 @@ using namespace RealTimeLidar;
 
 struct ListeningThreadData {
     PacketReceiver* receiver;
-    PacketAnalyzer* analyzer;
+    DataPacketAnalyzer* analyzer;
     bool packetHandlerQuit;
     ArgumentHandler* argHandler;
 };
@@ -79,7 +80,7 @@ int imuThreadFunction(void* arg);
 int main(int argc, char* argv[]) {
 
     PacketReceiver receiver;
-    PacketAnalyzer analyzer;
+    DataPacketAnalyzer analyzer;
     Registrar<CartesianPoint> registrar(&rawQueue, &registeredQueue, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY);
     ImuReader imuReader;
     ArgumentHandler argHandler(&receiver);
