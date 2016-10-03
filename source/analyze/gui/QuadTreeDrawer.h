@@ -12,7 +12,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
-#include "QuadTree.h"
+#include "../../common/structures/QuadTree.h"
 
 #define OPTIMIZATION_THRESHOLD 0.05f
 

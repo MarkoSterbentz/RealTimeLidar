@@ -13,6 +13,7 @@
 #include "PacketReceiver.h"
 #include "ImuReader.h"
 #include "Controls.h"
+#include "ArgumentHandler.h"
 
 //#define SHOW_NONCONTRIBUTING_POINTS
 #include "Registrar.h"
@@ -37,6 +38,7 @@ struct ListeningThreadData {
     PacketReceiver* receiver;
     PacketAnalyzer* analyzer;
     bool packetHandlerQuit;
+    ArgumentHandler* argHandler;
 };
 struct RegistrationThreadData {
     Registrar<CartesianPoint>* registrar;
@@ -61,7 +63,7 @@ moodycamel::ReaderWriterQueue<CartesianPoint> rawQueue(MAX_POINTS_IN_GRID);
 moodycamel::ReaderWriterQueue<CartesianPoint> registeredQueue(MAX_POINTS_IN_GRID);
 
 // prototypes
-void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls);
+void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls, ArgumentHandler &argHandler);
 void initPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread);
 void stopPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread);
 void initRegistration(RegistrationThreadData& rtd, SDL_Thread** registrationThread);
@@ -69,9 +71,6 @@ void stopRegistration(RegistrationThreadData& rtd, SDL_Thread** registrationThre
 void initImu(ImuThreadData& itd, SDL_Thread** imuThread);
 void stopImu(ImuThreadData& itd, SDL_Thread** imuThread);
 void initKernel();
-bool flagIsValid(char flag);
-void checkOptionInput(char &input, PacketReceiver &receiver, int option);
-int handleCommandLineFlags(int argc, char* argv[], PacketReceiver& receiver);
 int initGraphics(Camera& camera);
 int listeningThreadFunction(void* listeningThreadData);
 int registrationThreadFunction(void* arg);
@@ -83,8 +82,9 @@ int main(int argc, char* argv[]) {
     PacketAnalyzer analyzer;
     Registrar<CartesianPoint> registrar(&rawQueue, &registeredQueue, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY);
     ImuReader imuReader;
-    
-    ListeningThreadData ltd = { &receiver, &analyzer, false };
+    ArgumentHandler argHandler(&receiver);
+
+    ListeningThreadData ltd = { &receiver, &analyzer, false, &argHandler };
     SDL_Thread* packetListeningThread = NULL;
 
     RegistrationThreadData rtd = { &registrar, false };
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
     ImuThreadData itd = { &imuReader, false };
     SDL_Thread* imuThread = NULL;
 
-    handleCommandLineFlags(argc, argv, receiver);
+    argHandler.handleCommandLineFlags(argc, argv, receiver);
     receiver.openInputFile();
 
     // This sets up the kerning tools used for data analysis
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
     Camera camera(1.0, 10.0f, 100000.0, 1, 0.0, 1.2, 2000.0, 100.f, 10000.f);
     Controls controls;
 
-    if (receiver.isOptionEnabled(GRAPHICS)) {
+    if (argHandler.isOptionEnabled(GRAPHICS)) {
         if (initGraphics(camera) == 1) {
             return 1;
         }
@@ -111,28 +111,27 @@ int main(int argc, char* argv[]) {
         initImu(itd, &imuThread);
     }
 
-    if (receiver.isOptionEnabled(STREAM)) {
+    if (argHandler.isOptionEnabled(STREAM)) {
         initPacketHandling(ltd, &packetListeningThread);
         initRegistration(rtd, &registrationThread);
     }
 
     /* Begin the main loop on this thread: */
-    mainLoop(receiver, camera, controls);
+    mainLoop(receiver, camera, controls, argHandler);
 
-    if (receiver.isOptionEnabled(STREAM)) {
+    if (argHandler.isOptionEnabled(STREAM)) {
         stopPacketHandling(ltd, &packetListeningThread);
         stopRegistration(rtd, &registrationThread);
     }
 
-    if ( ! receiver.isOptionEnabled(GRAPHICS)) {
+    if (!argHandler.isOptionEnabled(GRAPHICS)) {
         stopImu(itd, &imuThread);
     }
 
     return 0;
 }
 
-void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls) {
-
+void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls, ArgumentHandler &argHandler) {
     bool loop = true;
 
     while (loop) {
@@ -142,7 +141,7 @@ void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls) {
             grid.addPoint(p);
         }
 
-        if (receiver.isOptionEnabled(GRAPHICS)) {
+        if (argHandler.isOptionEnabled(GRAPHICS)) {
             /**************************** HANDLE CONTROLS ********************************/
             int timeToQuit = controls.update(receiver, camera, gridDrawer); // returns 1 if quit events happen
             if (timeToQuit) {
@@ -175,7 +174,7 @@ int listeningThreadFunction(void* arg) {
         }
         // handle any incoming packet
         if (ltd->receiver->getPacketQueueSize() > 0) {
-            if (ltd->receiver->isOptionEnabled(WRITE)) {
+            if (ltd->argHandler->isOptionEnabled(WRITE)) {
                 ltd->receiver->writePacketToFile(ltd->receiver->getNextQueuedPacket());
             }
             ltd->analyzer->loadPacket(ltd->receiver->getNextQueuedPacket());
@@ -288,103 +287,5 @@ int initGraphics(Camera& camera) {
     camera.setAspect(graphics.getAspectRatio());
     gridDrawer.init(&grid, &camera, 0, log);
     std::cout << log.str();
-    return 0;
-}
-
-bool flagIsValid(char flag) {
-    switch (flag) {
-        case 'g':
-        case 's':
-        case 'f':
-        case 'w':
-        case 'h':
-            return true;
-        default:
-            return false;
-    }
-}
-
-void checkOptionInput(char &input, PacketReceiver &receiver, int option) {
-    std::cin.get(input);
-    std::cin.ignore(256, '\n');
-    if (input == 'y' || input == 'Y') {
-        receiver.enableOption(option);
-    } else if (input == 'n' || input == 'N') {
-        receiver.disableOption(option);
-    } else {
-        std::cout << "Please enter either 'y' or 'n'." << std::endl;
-    }
-}
-
-int handleCommandLineFlags(int argc, char* argv[], PacketReceiver& receiver) {
-    /* Deal with the command line flags: */
-    /* Validate flags: */
-    for (int fc = 1; fc < argc; ++fc) {
-        std::string arg = std::string(argv[fc]);
-        /* Handle multiple flags in one argument: */
-        if (arg[0] == '-') {
-            for (int i = 1; i < arg.length(); ++i) {
-                if (! flagIsValid(arg[i])) {
-                    std::cout << arg[i] << " is an invalid flag. Ending program." << std::endl;
-                    return 1;
-                }
-            }
-        } else {
-            std::cout << arg << " is an invalid flag." << std::endl;
-        }
-    }
-    /* Default flag values are set to false: */
-    for (int fc = 1; fc < argc; ++fc) {
-        std::string arg = std::string(argv[fc]);
-        /* Handle multiple flags in one argument: */
-        if (arg[0] == '-') {
-            for(int i = 1; i < arg.length(); ++i) {
-                switch(arg[i]) {
-                    case 'g':
-                        receiver.enableOption(GRAPHICS);
-                        break;
-                    case 's':
-                        receiver.enableOption(STREAM);
-                        break;
-                    case 'f':
-                        receiver.enableOption(FORWARD);
-                        break;
-                    case 'w':
-                        receiver.enableOption(WRITE);
-                        break;
-                    case 'h':
-                        std::cout << "HELP ME PLEASE!" << std::endl; //enableHelp();                      // ADD HELP FLAG
-                        break;
-                    default:
-                        std::cout << arg[i] << " is an invalid flag. Ending program." << std::endl;
-                        return 1;
-                }
-            }
-        } else {
-            std::cout << arg << " is an invalid flag." << std::endl;
-        }
-    }
-
-    /* For the necessary options that the user did not specify with flags, prompt. */
-    char input;
-    /* Check for gui flag: */
-    while (!receiver.isOptionSpecified(GRAPHICS)) {
-        std::cout << "Enable graphical display? (y/n) ";
-        checkOptionInput(input, receiver, GRAPHICS);
-    }
-    while (!receiver.isOptionSpecified(STREAM)) {
-        std::cout << "Enable data streaming? (y/n) ";
-        checkOptionInput(input, receiver, STREAM);
-    }
-    if (receiver.isOptionEnabled(STREAM)) {
-        while (!receiver.isOptionSpecified(WRITE)) {
-            std::cout << "Enable writing data to a file? (y/n) ";
-            checkOptionInput(input, receiver, WRITE);
-        }
-        while (!receiver.isOptionSpecified(FORWARD)) {
-            std::cout << "Enable forwarding of data to a different location? (y/n) ";
-            checkOptionInput(input, receiver, FORWARD);
-        }
-    }
     return 0;
 }
