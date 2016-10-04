@@ -101,7 +101,7 @@ namespace RealTimeLidar {
 
     /* Returns the size of the given file in bytes. */
     long ArgumentHandler::getFileSize(std::string fileName) {
-        std::ifstream in(fileName, std::ios::binary | std::ios::ate);
+        std::ifstream in(fileName.c_str(), std::ios::binary | std::ios::ate);
         return in.tellg();
     }
 
