@@ -72,7 +72,6 @@ namespace RealTimeLidar {
         previousTime = currentTime;
         // Get current keyboard state ( this is used for smooth controls rather than key press event controls above )
         const Uint8* keyStates = SDL_GetKeyboardState(NULL);
-        float keyRotate = KEY_ROTATE_SENSITIVITY * deltaTime;
         float keyMove = KEY_MOVE_SENSITIVITY * deltaTime;
         if (keyStates[SDL_SCANCODE_W]) {
             camera.moveBackward(-keyMove);

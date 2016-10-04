@@ -20,7 +20,7 @@ namespace RealTimeLidar {
         moodycamel::ReaderWriterQueue<P>* inQueue,* outQueue;
         Eigen::Matrix3Xd currentCloud, histClouds, nonContributingPoints;
         Eigen::Affine3d lastTrans;
-        int writeHead, numPerCloud, numHists, numHistFilled, currentHist, counter, sparsity;
+        int numPerCloud, numHists, sparsity, writeHead, numHistFilled, currentHist, counter;
         ICP::Parameters param;
 
         Eigen::Vector3d decompTranslation(const Eigen::Affine3d& trans);

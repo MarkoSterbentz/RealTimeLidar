@@ -145,7 +145,7 @@ namespace RealTimeLidar {
             std::string arg = std::string(argv[fc]);
             /* Handle multiple flags in one argument: */
             if (arg[0] == '-') {
-                for (int i = 1; i < arg.length(); ++i) {
+                for (size_t i = 1; i < arg.length(); ++i) {
                     if (! flagIsValid(arg[i])) {
                         std::cout << arg[i] << " is an invalid flag. Ending program." << std::endl;
                         return 1;
@@ -160,7 +160,7 @@ namespace RealTimeLidar {
             std::string arg = std::string(argv[fc]);
             /* Handle multiple flags in one argument: */
             if (arg[0] == '-') {
-                for(int i = 1; i < arg.length(); ++i) {
+                for(size_t i = 1; i < arg.length(); ++i) {
                     switch(arg[i]) {
                         case 'g':
                             enableOption(GRAPHICS);
