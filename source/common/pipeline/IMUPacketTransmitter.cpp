@@ -87,7 +87,7 @@ namespace RealTimeLidar {
     void IMUPacketTransmitter::transmitData() {
         // query the data
         bno055::ImuData_16 data;
-        if (bno055.queryImuData(&data) || 1) {
+        if (bno055.queryImuData(&data)) {
             // create the packet
             //unsigned char *newPacket = 0;
             std::vector<unsigned char> newPacket;
