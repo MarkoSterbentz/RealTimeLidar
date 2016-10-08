@@ -9,5 +9,8 @@ add_executable(capture
   main.cpp
   )
 target_link_libraries(capture
-  BNO055
+        pipeline
+        structures
+        BNO055
+        ${SDL2_LIBRARY}
   )

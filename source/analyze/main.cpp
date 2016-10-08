@@ -15,6 +15,7 @@
 #include "Controls.h"
 #include "ArgumentHandler.h"
 #include "DataPacketAnalyzer.h"
+#include "IMUPacketAnalyzer.h"
 
 //#define SHOW_NONCONTRIBUTING_POINTS
 #include "Registrar.h"
@@ -46,7 +47,9 @@ struct RegistrationThreadData {
     bool registrationQuit;
 };
 struct ImuThreadData {
-    ImuReader* imu;
+//    ImuReader* imu;
+    PacketReceiver* imuReceiver;
+    IMUPacketAnalyzer* imuAnalyzer;
     bool imuQuit;
 };
 
@@ -61,7 +64,7 @@ Graphics graphics;
 
 // This is a thread safe queue designed for one producer and one consumer
 moodycamel::ReaderWriterQueue<CartesianPoint> rawQueue(MAX_POINTS_IN_GRID);
-moodycamel::ReaderWriterQueue<CartesianPoint> registeredQueue(MAX_POINTS_IN_GRID);
+//moodycamel::ReaderWriterQueue<CartesianPoint> registeredQueue(MAX_POINTS_IN_GRID);
 
 // prototypes
 void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls, ArgumentHandler &argHandler);
@@ -81,17 +84,19 @@ int main(int argc, char* argv[]) {
 
     PacketReceiver receiver;
     DataPacketAnalyzer analyzer;
-    Registrar<CartesianPoint> registrar(&rawQueue, &registeredQueue, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY);
+//    Registrar<CartesianPoint> registrar(&rawQueue, &registeredQueue, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY);
+    PacketReceiver imuReceiver;
+    IMUPacketAnalyzer imuAnalyzer;
     ImuReader imuReader;
     ArgumentHandler argHandler(&receiver);
 
     ListeningThreadData ltd = { &receiver, &analyzer, false, &argHandler };
     SDL_Thread* packetListeningThread = NULL;
 
-    RegistrationThreadData rtd = { &registrar, false };
-    SDL_Thread* registrationThread = NULL;
+//    RegistrationThreadData rtd = { &registrar, false };
+//    SDL_Thread* registrationThread = NULL;
 
-    ImuThreadData itd = { &imuReader, false };
+    ImuThreadData itd = { &imuReceiver, &imuAnalyzer, false };
     SDL_Thread* imuThread = NULL;
 
     argHandler.handleCommandLineFlags(argc, argv, receiver);
@@ -108,13 +113,11 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         controls.init();
-    } else {
-        initImu(itd, &imuThread);
     }
 
     if (argHandler.isOptionEnabled(STREAM)) {
         initPacketHandling(ltd, &packetListeningThread);
-        initRegistration(rtd, &registrationThread);
+//        initRegistration(rtd, &registrationThread);
     }
 
     /* Begin the main loop on this thread: */
@@ -122,12 +125,13 @@ int main(int argc, char* argv[]) {
 
     if (argHandler.isOptionEnabled(STREAM)) {
         stopPacketHandling(ltd, &packetListeningThread);
-        stopRegistration(rtd, &registrationThread);
-    }
-
-    if (!argHandler.isOptionEnabled(GRAPHICS)) {
+//        stopRegistration(rtd, &registrationThread);
         stopImu(itd, &imuThread);
     }
+
+//    if (!argHandler.isOptionEnabled(GRAPHICS)) {
+//        stopImu(itd, &imuThread);
+//    }
 
     return 0;
 }
@@ -138,7 +142,8 @@ void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls, Argu
     while (loop) {
         /**************************** HANDLE INCOMING POINTS ********************************/
         CartesianPoint p;
-        while (registeredQueue.try_dequeue(p)) {
+//        while (registeredQueue.try_dequeue(p)) {
+        while (rawQueue.try_dequeue(p)) {
             grid.addPoint(p);
         }
 
@@ -201,8 +206,20 @@ int registrationThreadFunction(void* arg) {
 int imuThreadFunction(void* arg) {
     std::cout << "IMU reading thread is active.\n";
     ImuThreadData* idt = (ImuThreadData*) arg;
+//    while (!idt->imuQuit) {
+//        idt->imu->printOrientation();
+//    }
     while (!idt->imuQuit) {
-        idt->imu->printOrientation();
+        idt->imuReceiver->listenForDataPacket();
+        if(idt->imuReceiver->getPacketQueueSize() > 0) {
+            //TODO: Set up imu packet writing to file, like in the data listening thread
+            idt->imuAnalyzer->loadPacket(idt->imuReceiver->getNextQueuedPacket());
+            idt->imuReceiver->popQueuedPacket();
+            ExtractedIMUData data = idt->imuAnalyzer->extractIMUData();
+            printf("IMU Data: orientation : {%f, %f, %f,}  |  linAccel : {%f, %f, %f}\n",
+                   data.orient[0], data.orient[1], data.orient[2], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
+            //TODO: Send the imu data wherever we want now
+        }
     }
     return 0;
 }
@@ -232,7 +249,7 @@ void stopRegistration(RegistrationThreadData& rtd, SDL_Thread** registrationThre
 }
 
 void initImu(ImuThreadData& itd, SDL_Thread** imuThread) {
-    itd.imu->init();
+//    itd.imu->init();
     *imuThread = SDL_CreateThread(imuThreadFunction, "imu thread", (void*) &itd);
 }
 
