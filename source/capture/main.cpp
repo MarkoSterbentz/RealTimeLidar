@@ -129,8 +129,9 @@ int imuThreadFunction(void* arg) {
 
     printf("\n%d\n", idt->imuTransmitter->p->ai_addrlen);
 
-    while (!idt->imuQuit || 1) {
+    while (!idt->imuQuit) {
         idt->imuTransmitter->transmitData();
+        usleep(1000000);
     }
     return 0;
 }
