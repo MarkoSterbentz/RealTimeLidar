@@ -90,7 +90,10 @@ void mainLoop(PacketReceiver& receiver, ArgumentHandler &argHandler) {
     bool loop = true;
 
     while (loop) {
-        //TODO: Get this to stop
+        //TODO: Get this to stop on its own, without needing user input
+        if (argHandler.getStringInput("Enter 'q' to quit.").compare("q") == 0) {
+            loop = false;
+        }
     }
 }
 

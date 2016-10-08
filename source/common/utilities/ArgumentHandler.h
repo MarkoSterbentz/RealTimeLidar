@@ -29,7 +29,6 @@ namespace RealTimeLidar {
         int extractIntegerInput(std::string input);
         long getFileSize(std::string fileName);
         int getIntInput(std::string message);
-        std::string getStringInput(std::string message);
         bool flagIsValid(char flag);
         void getStreamDevice();
         int getNumberOfPacketsToRead();
@@ -45,6 +44,7 @@ namespace RealTimeLidar {
         void disableOption(int option);
         bool isOptionSpecified(int option);
         bool isOptionEnabled(int option);
+        std::string getStringInput(std::string message);
     };
 }
 #endif //REALTIMELIDAR_ARGUMENTHANDLER_H
