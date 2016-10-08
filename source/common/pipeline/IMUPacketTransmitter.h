@@ -30,16 +30,17 @@ namespace RealTimeLidar {
         bno055::Bno055Interface bno055;
 
         bool initBNO055(); // initialize the interface from which the IMU data can be queried
-        void packData(bno055::ImuData_f data, unsigned char *packetOut); // creates a data packet from the data on the front of the queue
+        void packData(bno055::ImuData_f data, unsigned char **packetOut); // creates a data packet from the data on the front of the queue
 
         // NETWORKING VARIABLES AND METHODS
         int sockfd;
-        struct addrinfo hints, *servinfo, *p;
+//        struct addrinfo hints, *servinfo, *p;
         int rv;
         ssize_t numBytes;
         int createSocket();
 
     public:
+        struct addrinfo hints, *servinfo, *p;
         IMUPacketTransmitter();
         ~IMUPacketTransmitter();
         void transmitData(); // broadcasts a newly created data packet

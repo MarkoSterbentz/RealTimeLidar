@@ -91,7 +91,7 @@ void mainLoop(PacketReceiver& receiver, ArgumentHandler &argHandler) {
 
     while (loop) {
         //TODO: Get this to stop on its own, without needing user input
-        if (argHandler.getStringInput("Enter 'q' to quit.").compare("q") == 0) {
+        if (argHandler.getStringInput("Enter 'q' to quit.\n").compare("q") == 0) {
             loop = false;
         }
     }
@@ -122,6 +122,13 @@ int listeningThreadFunction(void* arg) {
 int imuThreadFunction(void* arg) {
     std::cout << "IMU reading thread is active.\n";
     ImuThreadData* idt = (ImuThreadData*) arg;
+
+    // TESTING
+    for (int i = 0; i < 14; ++i)
+        printf("%u", (unsigned char) idt->imuTransmitter->p->ai_addr->sa_data[i]);
+
+    printf("\n%d\n", idt->imuTransmitter->p->ai_addrlen);
+
     while (!idt->imuQuit) {
         idt->imuTransmitter->transmitData();
     }

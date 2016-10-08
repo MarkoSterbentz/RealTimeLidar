@@ -39,8 +39,8 @@ namespace RealTimeLidar {
     }
 
     /* Creates a packet of the format: heading, roll, pitch, linAccel1, linAccel2, linAccel3. */
-    void IMUPacketTransmitter::packData(bno055::ImuData_f data, unsigned char *packetOut) {
-        packetOut = new unsigned char[PACKET_SIZE];
+    void IMUPacketTransmitter::packData(bno055::ImuData_f data, unsigned char **packetOut) {
+        *packetOut = new unsigned char[PACKET_SIZE];
 
         // extract the needed data
         bno055::Vec3_f orientData = data.names.orient;
@@ -89,7 +89,9 @@ namespace RealTimeLidar {
         if (bno055.queryImuData(&data)) {
             // create the packet
             unsigned char *newPacket = 0;
-            packData(data.toFloats(), newPacket);
+            packData(data.toFloats(), &newPacket);
+
+//            std::cout << p->ai_addr->sa_data << std::endl;
 
             // send the packet on transmissionPort
             if ((numBytes = sendto(sockfd, newPacket, PACKET_SIZE, 0,
