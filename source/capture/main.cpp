@@ -66,20 +66,22 @@ int main(int argc, char* argv[]) {
     ImuThreadData itd = { &imuTransmitter, &imuReader, false };
     SDL_Thread* imuThread = NULL;
 
-    argHandler.handleCommandLineFlags(argc, argv, dataReceiver);
+//    argHandler.handleCommandLineFlags(argc, argv, dataReceiver);
 
-    if (argHandler.isOptionEnabled(STREAM)) {
+    dataReceiver.setStreamMedium(VELODYNE);
+
+//    if (argHandler.isOptionEnabled(STREAM)) {
         initPacketHandling(ltd, &packetListeningThread);
         initImu(itd, &imuThread);
-    }
+//    }
 
     /* Begin the main loop on this thread: */
     mainLoop(dataReceiver, argHandler);
 
-    if (argHandler.isOptionEnabled(STREAM)) {
+//    if (argHandler.isOptionEnabled(STREAM)) {
         stopPacketHandling(ltd, &packetListeningThread);
         stopImu(itd, &imuThread);
-    }
+//    }
 
 
     return 0;
