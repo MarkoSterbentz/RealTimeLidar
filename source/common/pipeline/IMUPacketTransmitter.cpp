@@ -3,6 +3,7 @@
 //
 
 #include <bno055DataStructures.h>
+#include <bno055_uartSimple/bno055DataStructures.h>
 #include "IMUPacketTransmitter.h"
 
 #define BNO055_DEVICE_FILE "/dev/ttyS0"
@@ -121,19 +122,34 @@ namespace RealTimeLidar {
     }
 
     void IMUPacketTransmitter::printOrientation() {
+//        if ( ! bno055.isLive()) {
+//            return;
+//        }
+//        bno055::Vec3_16 orient;
+//        bno055::Vec3_f orientDeg;
+//        if (bno055.queryVec3(&orient, bno055::EULER_ORIENT)) {
+//            orientDeg = orient.toFusionEulerOrientation();
+//            std::cout << "-> ";
+//            std::cout << std::setiosflags(std::ios::right);
+//            std::cout << std::setiosflags(std::ios::fixed);
+//            std::cout << std::setw(10) << std::setprecision(4) << orientDeg.heading
+//                      << std::setw(10) << std::setprecision(4) << orientDeg.roll
+//                      << std::setw(10) << std::setprecision(4) << orientDeg.pitch;
+//            std::cout << std::endl;
+//        }
         if ( ! bno055.isLive()) {
             return;
         }
-        bno055::Vec3_16 orient;
-        bno055::Vec3_f orientDeg;
-        if (bno055.queryVec3(&orient, bno055::EULER_ORIENT)) {
-            orientDeg = orient.toFusionEulerOrientation();
+        bno055::ImuData_16 data;
+
+        if (bno055.queryImuData(&data)) {
+            bno055::ImuData_f dataF = data.toFloats();
             std::cout << "-> ";
             std::cout << std::setiosflags(std::ios::right);
             std::cout << std::setiosflags(std::ios::fixed);
-            std::cout << std::setw(10) << std::setprecision(4) << orientDeg.heading
-                      << std::setw(10) << std::setprecision(4) << orientDeg.roll
-                      << std::setw(10) << std::setprecision(4) << orientDeg.pitch;
+            std::cout << std::setw(10) << std::setprecision(4) << dataF.names.orient.heading
+                      << std::setw(10) << std::setprecision(4) << dataF.names.orient.roll
+                      << std::setw(10) << std::setprecision(4) << dataF.names.orient.pitch;
             std::cout << std::endl;
         }
     }
