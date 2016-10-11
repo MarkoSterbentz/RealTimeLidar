@@ -16,6 +16,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <iomanip>
 
 #include "Bno055Interface.h"
 
@@ -46,6 +47,7 @@ namespace RealTimeLidar {
         ~IMUPacketTransmitter();
         void transmitData(); // broadcasts a newly created data packet
         int init();
+        void printOrientation();
 
         std::string getTransmissionPort();
         void setTransmissionPort(int transmissionPort);

@@ -90,9 +90,13 @@ namespace RealTimeLidar {
     }
 
     void IMUPacketTransmitter::transmitData() {
-        // query the data
+        printOrientation();
+
+        /*// query the data
         bno055::ImuData_16 data;
         if (bno055.queryImuData(&data)) {
+
+
             // create the packet
             //unsigned char *newPacket = 0;
             std::vector<unsigned char> newPacket;
@@ -113,6 +117,24 @@ namespace RealTimeLidar {
 //                perror("talker: sendto");
 //                exit(1);
 //            }
+        }*/
+    }
+
+    void IMUPacketTransmitter::printOrientation() {
+        if ( ! bno055.isLive()) {
+            return;
+        }
+        bno055::Vec3_16 orient;
+        bno055::Vec3_f orientDeg;
+        if (bno055.queryVec3(&orient, bno055::EULER_ORIENT)) {
+            orientDeg = orient.toFusionEulerOrientation();
+            std::cout << "-> ";
+            std::cout << std::setiosflags(std::ios::right);
+            std::cout << std::setiosflags(std::ios::fixed);
+            std::cout << std::setw(10) << std::setprecision(4) << orientDeg.heading
+                      << std::setw(10) << std::setprecision(4) << orientDeg.roll
+                      << std::setw(10) << std::setprecision(4) << orientDeg.pitch;
+            std::cout << std::endl;
         }
     }
 
