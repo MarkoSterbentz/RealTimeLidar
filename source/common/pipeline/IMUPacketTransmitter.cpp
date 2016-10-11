@@ -106,13 +106,13 @@ namespace RealTimeLidar {
             printf("\n");
 //            std::cout << p->ai_addr->sa_data << std::endl;
             //END TESTING
-            
+
             // send the packet on transmissionPort
-            if ((numBytes = sendto(sockfd, newPacket.data(), PACKET_SIZE, 0,
-                                   p->ai_addr, p->ai_addrlen)) == -1) {
-                perror("talker: sendto");
-                exit(1);
-            }
+//            if ((numBytes = sendto(sockfd, newPacket.data(), PACKET_SIZE, 0,
+//                                   p->ai_addr, p->ai_addrlen)) == -1) {
+//                perror("talker: sendto");
+//                exit(1);
+//            }
         }
     }
 
