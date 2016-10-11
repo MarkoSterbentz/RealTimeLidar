@@ -188,26 +188,26 @@ namespace RealTimeLidar {
         }
 
         /* For the necessary options that the user did not specify with flags, prompt. */
-        char input;
-        /* Check for gui flag: */
-        while (!isOptionSpecified(GRAPHICS)) {
-            std::cout << "Enable graphical display? (y/n) ";
-            checkOptionInput(input, GRAPHICS);
-        }
-        while (!isOptionSpecified(STREAM)) {
-            std::cout << "Enable data streaming? (y/n) ";
-            checkOptionInput(input, STREAM);
-        }
-        if (isOptionEnabled(STREAM)) {
-            while (!isOptionSpecified(WRITE)) {
-                std::cout << "Enable writing data to a file? (y/n) ";
-                checkOptionInput(input, WRITE);
-            }
-            while (!isOptionSpecified(FORWARD)) {
-                std::cout << "Enable forwarding of data to a different location? (y/n) ";
-                checkOptionInput(input, FORWARD);
-            }
-        }
+//        char input;
+//        /* Check for gui flag: */
+//        while (!isOptionSpecified(GRAPHICS)) {
+//            std::cout << "Enable graphical display? (y/n) ";
+//            checkOptionInput(input, GRAPHICS);
+//        }
+//        while (!isOptionSpecified(STREAM)) {
+//            std::cout << "Enable data streaming? (y/n) ";
+//            checkOptionInput(input, STREAM);
+//        }
+//        if (isOptionEnabled(STREAM)) {
+//            while (!isOptionSpecified(WRITE)) {
+//                std::cout << "Enable writing data to a file? (y/n) ";
+//                checkOptionInput(input, WRITE);
+//            }
+//            while (!isOptionSpecified(FORWARD)) {
+//                std::cout << "Enable forwarding of data to a different location? (y/n) ";
+//                checkOptionInput(input, FORWARD);
+//            }
+//        }
         return 0;
     }
 
