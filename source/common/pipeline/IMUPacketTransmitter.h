@@ -39,12 +39,13 @@ namespace RealTimeLidar {
         ssize_t numBytes;
         int createSocket();
 
+
     public:
         struct addrinfo hints, *servinfo, *p;
         IMUPacketTransmitter();
         ~IMUPacketTransmitter();
         void transmitData(); // broadcasts a newly created data packet
-        bool initIMU();
+        int init();
 
         std::string getTransmissionPort();
         void setTransmissionPort(int transmissionPort);

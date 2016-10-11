@@ -39,7 +39,6 @@ struct ListeningThreadData {
 };
 struct ImuThreadData {
     IMUPacketTransmitter* imuTransmitter;
-    ImuReader* imu;
     bool imuQuit;
 };
 
@@ -57,13 +56,12 @@ int main(int argc, char* argv[]) {
     PacketReceiver dataReceiver;
     VelodynePacketTransmitter dataTransmitter;
     IMUPacketTransmitter imuTransmitter;
-    ImuReader imuReader;
     ArgumentHandler argHandler(&dataReceiver);
 
     ListeningThreadData ltd = { &dataReceiver, &dataTransmitter, false, &argHandler };
     SDL_Thread* packetListeningThread = NULL;
 
-    ImuThreadData itd = { &imuTransmitter, &imuReader, false };
+    ImuThreadData itd = { &imuTransmitter, false };
     SDL_Thread* imuThread = NULL;
 
 //    argHandler.handleCommandLineFlags(argc, argv, dataReceiver);
@@ -124,7 +122,7 @@ int listeningThreadFunction(void* arg) {
 int imuThreadFunction(void* arg) {
     std::cout << "IMU reading thread is active.\n";
     ImuThreadData* idt = (ImuThreadData*) arg;
-    //idt->imu->init();
+    idt->imuTransmitter->init();
     usleep(1000000);
     // TESTING
     for (int i = 0; i < 14; ++i)
@@ -155,7 +153,6 @@ void stopPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningTh
 }
 
 void initImu(ImuThreadData& itd, SDL_Thread** imuThread) {
-//    itd.imu->init();
     *imuThread = SDL_CreateThread(imuThreadFunction, "imu thread", (void*) &itd);
 }
 

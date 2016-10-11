@@ -12,11 +12,7 @@ namespace RealTimeLidar {
      * CONSTRUCTOR AND DESTRUCTOR
      *****************************************************/
     IMUPacketTransmitter::IMUPacketTransmitter() {
-        initBNO055();           //TODO: Bad place for this
-        this->transmissionPort = IMU_SERVER_PORT;
-        if (createSocket() != 0) {
-            std::cout << "failed to create IMU packet transmitter socket." << std::endl;
-        }
+
     }
 
     IMUPacketTransmitter::~IMUPacketTransmitter() {
@@ -27,6 +23,15 @@ namespace RealTimeLidar {
     /******************************************************
      * UTILITY METHODS
      *****************************************************/
+    int IMUPacketTransmitter::init() {
+        initBNO055();
+        this->transmissionPort = IMU_SERVER_PORT;
+        if (createSocket() != 0) {
+            std::cout << "failed to create IMU packet transmitter socket." << std::endl;
+        }
+        return 0;
+    }
+
     bool IMUPacketTransmitter::initBNO055() {
         bno055.init(BNO055_DEVICE_FILE);
         if (bno055.isLive()) {
@@ -94,12 +99,14 @@ namespace RealTimeLidar {
             packData(data.toFloats(), newPacket);
 
             // TESTING
-            printf("New Packet: \n");
+            printf("New Packet: ");
             for (int i = 0; i < PACKET_SIZE; ++i)
                 printf("%u", newPacket[i]);
 
+            printf("\n");
 //            std::cout << p->ai_addr->sa_data << std::endl;
-
+            //END TESTING
+            
             // send the packet on transmissionPort
             if ((numBytes = sendto(sockfd, newPacket.data(), PACKET_SIZE, 0,
                                    p->ai_addr, p->ai_addrlen)) == -1) {
