@@ -141,15 +141,15 @@ namespace RealTimeLidar {
             return;
         }
         bno055::ImuData_16 data;
+        int16_t a[7];
 
-        if (bno055.queryImuData(&data)) {
-            bno055::ImuData_f dataF = data.toFloats();
+        if (bno055.queryChunk_16(a, bno055::QUA_Data_w_LSB, 14)) {
             std::cout << "-> ";
             std::cout << std::setiosflags(std::ios::right);
             std::cout << std::setiosflags(std::ios::fixed);
-            std::cout << std::setw(10) << std::setprecision(4) << dataF.names.orient.heading
-                      << std::setw(10) << std::setprecision(4) << dataF.names.orient.roll
-                      << std::setw(10) << std::setprecision(4) << dataF.names.orient.pitch;
+            std::cout << std::setw(10) << std::setprecision(4) << a[1]
+                      << std::setw(10) << std::setprecision(4) << a[2]
+                      << std::setw(10) << std::setprecision(4) << a[3];
             std::cout << std::endl;
         }
     }
