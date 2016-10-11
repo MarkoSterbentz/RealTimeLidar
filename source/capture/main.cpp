@@ -124,7 +124,8 @@ int listeningThreadFunction(void* arg) {
 int imuThreadFunction(void* arg) {
     std::cout << "IMU reading thread is active.\n";
     ImuThreadData* idt = (ImuThreadData*) arg;
-
+    idt->imu->init();
+    usleep(1000000);
     // TESTING
     for (int i = 0; i < 14; ++i)
         printf("%u", (unsigned char) idt->imuTransmitter->p->ai_addr->sa_data[i]);
@@ -154,7 +155,7 @@ void stopPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningTh
 }
 
 void initImu(ImuThreadData& itd, SDL_Thread** imuThread) {
-    itd.imu->init();
+//    itd.imu->init();
     *imuThread = SDL_CreateThread(imuThreadFunction, "imu thread", (void*) &itd);
 }
 
