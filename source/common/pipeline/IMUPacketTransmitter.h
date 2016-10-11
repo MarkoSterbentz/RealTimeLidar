@@ -44,6 +44,7 @@ namespace RealTimeLidar {
         IMUPacketTransmitter();
         ~IMUPacketTransmitter();
         void transmitData(); // broadcasts a newly created data packet
+        bool initIMU();
 
         std::string getTransmissionPort();
         void setTransmissionPort(int transmissionPort);

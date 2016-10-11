@@ -12,7 +12,7 @@ namespace RealTimeLidar {
      * CONSTRUCTOR AND DESTRUCTOR
      *****************************************************/
     IMUPacketTransmitter::IMUPacketTransmitter() {
-        initBNO055();
+        initBNO055();           //TODO: Bad place for this
         this->transmissionPort = IMU_SERVER_PORT;
         if (createSocket() != 0) {
             std::cout << "failed to create IMU packet transmitter socket." << std::endl;
