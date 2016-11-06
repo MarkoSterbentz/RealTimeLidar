@@ -104,7 +104,6 @@ namespace RealTimeLidar {
             //exit(1);
         } else {
             packetQueue.push(dataBuf);
-            std::cout << "received a packet!" << std::endl;
         }
     }
 
@@ -167,6 +166,10 @@ namespace RealTimeLidar {
         this->streamMedium = medium;
         switch (medium) {
             case VELODYNE:
+                this->packetSize = VELODYNE_PACKET_SIZE;
+                this->portNumber = VELODYNE_TRANSMISSION_PORT;
+                break;
+            case VELODYNE_FORWARDER:
                 this->packetSize = VELODYNE_PACKET_SIZE;
                 this->portNumber = VELODYNE_FORWARD_PORT;
                 break;

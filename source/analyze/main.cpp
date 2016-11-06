@@ -90,6 +90,7 @@ int main(int argc, char* argv[]) {
     ImuReader imuReader;
     ArgumentHandler argHandler(&receiver);
 
+
     ListeningThreadData ltd = { &receiver, &analyzer, false, &argHandler };
     SDL_Thread* packetListeningThread = NULL;
 
@@ -168,9 +169,10 @@ int listeningThreadFunction(void* arg) {
 
     ListeningThreadData* ltd = (ListeningThreadData*) arg;
     int packetsReadCount = 0;
+
     while (!ltd->packetHandlerQuit) {
         /*************************** HANDLE PACKETS *********************************/
-        if (ltd->receiver->getStreamMedium() == VELODYNE) {
+        if (ltd->receiver->getStreamMedium() == VELODYNE_FORWARDER) { //VELODYNE) {
             ltd->receiver->listenForDataPacket();
         } else if (ltd->receiver->getStreamMedium() == INPUTFILE
                    && !ltd->receiver->endOfInputDataFile()

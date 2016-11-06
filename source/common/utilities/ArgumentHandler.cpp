@@ -59,7 +59,8 @@ namespace RealTimeLidar {
         while (inputInt == -1) {
             inputInt = getIntInput("Select the device you are streaming data from (enter the associated number):\n"
                                     "1. Velodyne\n"
-                                    "2. File\n");
+                                    "2. File\n"
+                                    "3. Velodyne Forwarder\n");
             switch (inputInt) {
                 case (1): {
                     receiver->setStreamMedium(VELODYNE);
@@ -71,6 +72,11 @@ namespace RealTimeLidar {
                     std::cout << "Selected streaming medium: FILE." << std::endl;
                     receiver->setInputDataFileName(getInputFileName());
                     receiver->setNumPacketsToRead(getNumberOfPacketsToRead());
+                    break;
+                }
+                case (3): {
+                    receiver->setStreamMedium(VELODYNE_FORWARDER);
+                    std::cout << "Selected streaming medium: VELODYNE_FORWARDER." << std::endl;
                     break;
                 }
                 default: {
