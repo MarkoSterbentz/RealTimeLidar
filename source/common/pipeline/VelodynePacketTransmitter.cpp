@@ -26,7 +26,7 @@ namespace RealTimeLidar {
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_DGRAM;
 
-        if ((rv = getaddrinfo(DESTINATION_IP_ADDRESS, VELODYNE_SERVER_PORT, &hints, &servinfo)) != 0) {
+        if ((rv = getaddrinfo(FORWARD_IP_ADDRESS, VELODYNE_FORWARD_PORT, &hints, &servinfo)) != 0) {
             fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
             return 1;
         }

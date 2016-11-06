@@ -125,10 +125,10 @@ int imuThreadFunction(void* arg) {
     idt->imuTransmitter->init();
     usleep(1000000);
     // TESTING
-    for (int i = 0; i < 14; ++i)
-        printf("%u", (unsigned char) idt->imuTransmitter->p->ai_addr->sa_data[i]);
-
-    printf("\n%d\n", idt->imuTransmitter->p->ai_addrlen);
+//    for (int i = 0; i < 14; ++i)
+//        printf("%u", (unsigned char) idt->imuTransmitter->p->ai_addr->sa_data[i]);
+//
+//    printf("\n%d\n", idt->imuTransmitter->p->ai_addrlen);
 
     while (!idt->imuQuit) {
         idt->imuTransmitter->transmitData();

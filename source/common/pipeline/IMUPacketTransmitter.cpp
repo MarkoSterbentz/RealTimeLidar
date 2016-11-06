@@ -26,7 +26,7 @@ namespace RealTimeLidar {
      *****************************************************/
     int IMUPacketTransmitter::init() {
         initBNO055();
-        this->transmissionPort = IMU_SERVER_PORT;
+        this->transmissionPort = IMU_FORWARD_PORT;
         if (createSocket() != 0) {
             std::cout << "failed to create IMU packet transmitter socket." << std::endl;
         }
@@ -47,7 +47,7 @@ namespace RealTimeLidar {
     /* Creates a packet of the format: heading, roll, pitch, linAccel1, linAccel2, linAccel3. */
     void IMUPacketTransmitter::packData(bno055::ImuData_f data, std::vector<unsigned char> &packetOut) {
         //*packetOut = new unsigned char[PACKET_SIZE];
-        packetOut.resize(PACKET_SIZE);
+        packetOut.resize(IMU_PACKET_SIZE);
 
         // extract the needed data
         bno055::Vec3_f orientData = data.names.orient;
@@ -66,7 +66,7 @@ namespace RealTimeLidar {
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_DGRAM;
 
-        if ((rv = getaddrinfo(DESTINATION_IP_ADDRESS, IMU_SERVER_PORT, &hints, &servinfo)) != 0) {
+        if ((rv = getaddrinfo(FORWARD_IP_ADDRESS, IMU_FORWARD_PORT, &hints, &servinfo)) != 0) {
             fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
             return 1;
         }
@@ -93,7 +93,7 @@ namespace RealTimeLidar {
     void IMUPacketTransmitter::transmitData() {
         printOrientation();
 
-        /*// query the data
+        // query the data
         bno055::ImuData_16 data;
         if (bno055.queryImuData(&data)) {
 
@@ -104,21 +104,22 @@ namespace RealTimeLidar {
             packData(data.toFloats(), newPacket);
 
             // TESTING
-            printf("New Packet: ");
-            for (int i = 0; i < PACKET_SIZE; ++i)
-                printf("%u", newPacket[i]);
+//            printf("New Packet: ");
+//            for (int i = 0; i < IMU_PACKET_SIZE; ++i)
+//                printf("%u", newPacket[i]);
+//
+//            printf("\n");
 
-            printf("\n");
 //            std::cout << p->ai_addr->sa_data << std::endl;
             //END TESTING
 
             // send the packet on transmissionPort
-//            if ((numBytes = sendto(sockfd, newPacket.data(), PACKET_SIZE, 0,
-//                                   p->ai_addr, p->ai_addrlen)) == -1) {
-//                perror("talker: sendto");
-//                exit(1);
-//            }
-        }*/
+            if ((numBytes = sendto(sockfd, newPacket.data(), IMU_PACKET_SIZE, 0,
+                                   p->ai_addr, p->ai_addrlen)) == -1) {
+                perror("talker: sendto");
+                exit(1);
+            }
+        }
     }
 
     void IMUPacketTransmitter::printOrientation() {

@@ -17,11 +17,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-//#include "StreamingMedium.h"
-
-#define DESTINATION_IP_ADDRESS "192.168.1.71"
-#define VELODYNE_SERVER_PORT "22023"
-#define VELODYNE_PACKET_SIZE 1249
+#include "StreamingMedium.h"
 
 namespace RealTimeLidar {
     class VelodynePacketTransmitter {

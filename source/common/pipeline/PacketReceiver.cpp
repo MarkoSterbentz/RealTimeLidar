@@ -60,7 +60,7 @@ namespace RealTimeLidar {
         hints.ai_socktype = SOCK_DGRAM;
         hints.ai_flags = AI_PASSIVE; // use my IP
 
-        if ((rv = getaddrinfo(NULL, DATAPORT, &hints, &servinfo)) != 0) {
+        if ((rv = getaddrinfo(NULL, VELODYNE_TRANSMISSION_PORT, &hints, &servinfo)) != 0) {
             fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
             return 1;
         }
@@ -98,7 +98,7 @@ namespace RealTimeLidar {
         socklen_t addr_len;
 
         addr_len = sizeof their_addr;
-        if ((numbytes = recvfrom(sockfd, dataBuf, DATABUFLEN - 1, 0, (struct sockaddr*) &their_addr, &addr_len)) ==
+        if ((numbytes = recvfrom(sockfd, dataBuf, VELODYNE_PACKET_SIZE - 1, 0, (struct sockaddr*) &their_addr, &addr_len)) ==
             -1) {
             //perror("recvfrom");
             //exit(1);
@@ -109,7 +109,7 @@ namespace RealTimeLidar {
 
     /* Writes the given packet data to the current output file. */
     void PacketReceiver::writePacketToFile(unsigned char* packet) {
-        outputFileStream.write((char*) &packet[0], DATABUFLEN);
+        outputFileStream.write((char*) &packet[0], VELODYNE_PACKET_SIZE);
     }
 
     /* Reads a given number of packets from the inputFile. */
@@ -123,9 +123,9 @@ namespace RealTimeLidar {
 
     /* Read a single packet from the input file into packetQueue. */
     void PacketReceiver::readSingleDataPacketFromFile() {
-        if (inputFile.is_open() && inputFile.read((char*) dataBuf, DATABUFLEN)) {
+        if (inputFile.is_open() && inputFile.read((char*) dataBuf, VELODYNE_PACKET_SIZE)) {
             packetQueue.push(dataBuf);
-            inputFile.seekg(DATABUFLEN,
+            inputFile.seekg(VELODYNE_PACKET_SIZE,
                             std::ios::cur);   // move the current position in the ifstream to the next packet
         } else {
             std::cout << "No longer reading packets file." << std::endl;
@@ -167,11 +167,11 @@ namespace RealTimeLidar {
         switch (medium) {
             case VELODYNE:
                 this->packetSize = VELODYNE_PACKET_SIZE;
-                this->portNumber = VELODYNE_PORT_NUMBER;
+                this->portNumber = atoi(VELODYNE_FORWARD_PORT);
                 break;
             case IMU:
                 this->packetSize = IMU_PACKET_SIZE;
-                this->portNumber = IMU_PORT_NUMBER;
+                this->portNumber = atoi(IMU_FORWARD_PORT);
                 break;
             case INPUTFILE:
             default:

@@ -27,12 +27,6 @@
 #include <stdexcept>
 
 #include "StreamingMedium.h"
-//TODO: Get rid of these defines. They have been replaced by defines in StreamingMedium.h.
-#define DATAPORT "2368"    // the Data Packet is broadcasted to this port
-#define POSITIONPORT "8308" // the Position Packet is broadcasted to this port
-
-#define DATABUFLEN 1249  //size of the data packet
-#define POSBUFLEN 554   // size of the position packet
 
 namespace RealTimeLidar {
     class PacketReceiver {

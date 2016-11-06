@@ -19,10 +19,7 @@
 #include <iomanip>
 
 #include "Bno055Interface.h"
-
-#define IMU_SERVER_PORT "22022"
-#define DESTINATION_IP_ADDRESS "192.168.1.71" // this is the static ip the velodyne is broadcasting on + 1
-#define PACKET_SIZE 24
+#include "StreamingMedium.h"
 
 namespace RealTimeLidar {
     class IMUPacketTransmitter {
