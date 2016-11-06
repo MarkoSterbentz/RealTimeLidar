@@ -177,7 +177,7 @@ namespace RealTimeLidar {
             case INPUTFILE:
             default:
                 this->packetSize = 0;
-                this->portNumber = 0;
+                this->portNumber = "0";
                 break;
         }
         this->dataBuf = new unsigned char[this->packetSize];
