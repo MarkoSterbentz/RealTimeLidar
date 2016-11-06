@@ -42,7 +42,7 @@ namespace RealTimeLidar {
         StreamingMedium streamMedium;                   // no longer needed
 
         int packetSize; //(in bytes)                    // universal
-        int portNumber;                                 // network
+        std::string portNumber;                                 // network
 
         void readSingleDataPacketFromFile();            // file
 

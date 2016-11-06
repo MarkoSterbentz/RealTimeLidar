@@ -60,7 +60,7 @@ namespace RealTimeLidar {
         hints.ai_socktype = SOCK_DGRAM;
         hints.ai_flags = AI_PASSIVE; // use my IP
 
-        if ((rv = getaddrinfo(NULL, VELODYNE_TRANSMISSION_PORT, &hints, &servinfo)) != 0) {
+        if ((rv = getaddrinfo(NULL, portNumber.c_str(), &hints, &servinfo)) != 0) {         // changed VELODYNE_TRANSMISSION_PORT to portNumber.c_str()
             fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
             return 1;
         }
@@ -104,6 +104,7 @@ namespace RealTimeLidar {
             //exit(1);
         } else {
             packetQueue.push(dataBuf);
+            std::cout << "received a packet!" << std::endl;
         }
     }
 
@@ -167,11 +168,11 @@ namespace RealTimeLidar {
         switch (medium) {
             case VELODYNE:
                 this->packetSize = VELODYNE_PACKET_SIZE;
-                this->portNumber = atoi(VELODYNE_FORWARD_PORT);
+                this->portNumber = VELODYNE_FORWARD_PORT;
                 break;
             case IMU:
                 this->packetSize = IMU_PACKET_SIZE;
-                this->portNumber = atoi(IMU_FORWARD_PORT);
+                this->portNumber = IMU_FORWARD_PORT;
                 break;
             case INPUTFILE:
             default:
