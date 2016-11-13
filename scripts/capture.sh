@@ -35,9 +35,12 @@ else
 			sudo netctl stop $NETCTL_PROFILE
 
 			# Stop the ethernet connection that was connecting to the Velodyne VLP-16
-			sudo ip addr flush dev INTERFACE
-			sudo ip route flush dev INTERFACE
-			sudo ip link set INTERFACE down
+			sudo ip addr flush dev $INTERFACE
+			sudo ip route flush dev $INTERFACE
+			sudo ip link set $INTERFACE down
+
+			# Restart the default ethernet internet connection
+			sudo netctl start ethernet-dhcp
 		else
 			echo "'"$ARG"' is not a valid argument."
 		fi
