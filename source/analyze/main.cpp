@@ -216,7 +216,6 @@ int imuThreadFunction(void* arg) {
     while (!idt->imuQuit) {
         idt->imuReceiver->listenForDataPacket();
         if(idt->imuReceiver->getPacketQueueSize() > 0) {
-            std::cout << "received an imu packet." << std::endl;
             //TODO: Set up imu packet writing to file, like in the data listening thread
             idt->imuAnalyzer->loadPacket(idt->imuReceiver->getNextQueuedPacket());
             idt->imuReceiver->popQueuedPacket();

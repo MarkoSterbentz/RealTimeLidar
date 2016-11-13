@@ -50,22 +50,19 @@ namespace RealTimeLidar {
         packetOut.resize(IMU_PACKET_SIZE);
 
         // extract the needed data
-        //bno055::Vec3_f orientData = data.names.orient;
-        bno055::Vec4_f quatData = data.names.quat;
+        bno055::Vec3_f orientData = data.names.orient;
         bno055::Vec3_f linAccelData = data.names.linAccel;
 
         // write the bytes
-//        for(int i = 0; i < 3; ++i) {
-//            ((float*) packetOut.data())[i] = orientData[i];
-//            ((float*) packetOut.data())[i+3] = linAccelData[i];
-//        }
-        // write the bytes
-        for(int i = 0; i < 4; ++i) {
-            ((float*) packetOut.data())[i] = quatData[i];
+        for(int i = 0; i < 3; ++i) {
+            ((float*) packetOut.data())[i] = orientData[i];
+            ((float*) packetOut.data())[i+3] = linAccelData[i];
         }
-        for(int i = 4; i < 7; ++i) {
-            ((float*) packetOut.data())[i] = linAccelData[i];
-        }
+    }
+
+    void IMUPacketTransmitter::packData(std::vector<int16_t> &data, std::vector<unsigned char> &packetOut) {
+        packetOut.resize(IMU_PACKET_SIZE);
+        memcpy(packetOut.data(), data.data(), IMU_PACKET_SIZE);
     }
 
     /* Creates a socket over which the IMU data can be transmitted. */
@@ -99,20 +96,15 @@ namespace RealTimeLidar {
     }
 
     void IMUPacketTransmitter::transmitData() {
-        //printOrientation();
-
-
         // TESTING NEW
-        bno055::ImuData_16 data;
-        int16_t a[7];
+        std::vector<int16_t> a(7); //[7];
 
-        if (bno055.queryChunk_16(a, bno055::QUA_Data_w_LSB, 14)) {
+        if (bno055.queryChunk_16(a.data(), bno055::QUA_Data_w_LSB, 14)) {
             std::vector<unsigned char> newPacket;
-            packData(data.toFloats(), newPacket);
+            packData(a, newPacket);
 
             // send the packet on transmissionPort
-            if ((numBytes = sendto(sockfd, newPacket.data(), IMU_PACKET_SIZE, 0,
-                                   p->ai_addr, p->ai_addrlen)) == -1) {
+            if ((numBytes = sendto(sockfd, newPacket.data(), IMU_PACKET_SIZE, 0, p->ai_addr, p->ai_addrlen)) == -1) {
                 perror("talker: sendto");
                 exit(1);
             }

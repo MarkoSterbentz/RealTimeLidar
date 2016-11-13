@@ -29,6 +29,7 @@ namespace RealTimeLidar {
 
         bool initBNO055(); // initialize the interface from which the IMU data can be queried
         void packData(bno055::ImuData_f data, std::vector<unsigned char> &packetOut); // creates a data packet from the data on the front of the queue
+        void packData(std::vector<int16_t> &data, std::vector<unsigned char> &packetOut);
 
         // NETWORKING VARIABLES AND METHODS
         int sockfd;
