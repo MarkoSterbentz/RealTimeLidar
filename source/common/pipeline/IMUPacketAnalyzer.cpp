@@ -2,6 +2,7 @@
 // Created by marko on 9/10/16.
 //
 
+#include <iostream>
 #include "IMUPacketAnalyzer.h"
 
 namespace RealTimeLidar {
@@ -29,10 +30,10 @@ namespace RealTimeLidar {
         ExtractedIMUData data = {.quat = {-1.F,-1.F,-1.F,-1.F}, .linAccel = {-1.F,-1.F,-1.F}};
         //TODO: Change these loops to memcpy
         for(int i = 0; i < 4; ++i) {
-            data.quat[i] = (float)(((int16_t*) currentPacket)[i*2]);
+            data.quat[i] = (float)(((int16_t*) currentPacket)[i]);
         }
         for(int i = 0; i < 3; ++i) {
-            data.linAccel[i]= (float)(((int16_t*) currentPacket)[(i+3)*2]);
+            data.linAccel[i]= (float)(((int16_t*) currentPacket)[(i+4)]);
         }
         return data;
     }

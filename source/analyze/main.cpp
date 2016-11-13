@@ -223,7 +223,7 @@ int imuThreadFunction(void* arg) {
 //            printf("IMU Data: orientation : {%f, %f, %f,}  |  linAccel : {%f, %f, %f}\n",
 //                   data.orient[0], data.orient[1], data.orient[2], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
             printf("IMU Data: orientation : {%f, %f, %f, %f}  |  linAccel : {%f, %f, %f}\n",
-                   data.quat[0], data.quat[1], data.quat[2], data.quat[4], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
+                   data.quat[0], data.quat[1], data.quat[2], data.quat[3], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
             //TODO: Send the imu data wherever we want now
         }
     }
