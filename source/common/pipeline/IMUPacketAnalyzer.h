@@ -7,6 +7,8 @@
 
 #include "BasePacketAnalyzer.h"
 #include "IMUData.h"
+#include <stdint.h>
+
 namespace RealTimeLidar {
     class IMUPacketAnalyzer : public BasePacketAnalyzer {
     private:
