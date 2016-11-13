@@ -98,15 +98,27 @@ namespace RealTimeLidar {
         socklen_t addr_len;
 
         addr_len = sizeof their_addr;
-        if ((numbytes = recvfrom(sockfd, dataBuf, VELODYNE_PACKET_SIZE - 1, 0, (struct sockaddr*) &their_addr, &addr_len)) ==
-            -1) {
-            //perror("recvfrom");
-            //exit(1);
-        } else {
-            packetQueue.push(dataBuf);
+
+        if (streamMedium != IMU) {
+            if ((numbytes = recvfrom(sockfd, dataBuf, VELODYNE_PACKET_SIZE - 1, 0, (struct sockaddr*) &their_addr, &addr_len)) ==
+                -1) {
+                //perror("recvfrom");
+                //exit(1);
+            } else {
+                packetQueue.push(dataBuf);
+            }
+        } else if (streamMedium == IMU){
+            if ((numbytes = recvfrom(sockfd, dataBuf, IMU_PACKET_SIZE - 1, 0, (struct sockaddr*) &their_addr, &addr_len)) ==
+                -1) {
+                //perror("recvfrom");
+                //exit(1);
+            } else {
+                packetQueue.push(dataBuf);
+            }
         }
     }
 
+    // TODO: Make this work for IMU packets
     /* Writes the given packet data to the current output file. */
     void PacketReceiver::writePacketToFile(unsigned char* packet) {
         outputFileStream.write((char*) &packet[0], VELODYNE_PACKET_SIZE);
@@ -121,6 +133,7 @@ namespace RealTimeLidar {
         }
     }
 
+    // TODO: Make this work for IMU packets
     /* Read a single packet from the input file into packetQueue. */
     void PacketReceiver::readSingleDataPacketFromFile() {
         if (inputFile.is_open() && inputFile.read((char*) dataBuf, VELODYNE_PACKET_SIZE)) {

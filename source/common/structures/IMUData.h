@@ -7,7 +7,8 @@
 
 namespace RealTimeLidar {
     struct ExtractedIMUData {
-        float orient[3];
+        //float orient[3];                // TODO: Change this to quaternions, and there are four values
+        float quat[4];
         float linAccel[3];
     };
 }

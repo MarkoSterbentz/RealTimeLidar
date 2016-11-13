@@ -50,13 +50,21 @@ namespace RealTimeLidar {
         packetOut.resize(IMU_PACKET_SIZE);
 
         // extract the needed data
-        bno055::Vec3_f orientData = data.names.orient;
+        //bno055::Vec3_f orientData = data.names.orient;
+        bno055::Vec4_f quatData = data.names.quat;
         bno055::Vec3_f linAccelData = data.names.linAccel;
 
         // write the bytes
-        for(int i = 0; i < 3; ++i) {
-            ((float*) packetOut.data())[i] = orientData[i];
-            ((float*) packetOut.data())[i+3] = linAccelData[i];
+//        for(int i = 0; i < 3; ++i) {
+//            ((float*) packetOut.data())[i] = orientData[i];
+//            ((float*) packetOut.data())[i+3] = linAccelData[i];
+//        }
+        // write the bytes
+        for(int i = 0; i < 4; ++i) {
+            ((float*) packetOut.data())[i] = quatData[i];
+        }
+        for(int i = 4; i < 7; ++i) {
+            ((float*) packetOut.data())[i] = linAccelData[i];
         }
     }
 
@@ -91,27 +99,16 @@ namespace RealTimeLidar {
     }
 
     void IMUPacketTransmitter::transmitData() {
-        printOrientation();
+        //printOrientation();
 
-        // query the data
+
+        // TESTING NEW
         bno055::ImuData_16 data;
-        if (bno055.queryImuData(&data)) {
+        int16_t a[7];
 
-
-            // create the packet
-            //unsigned char *newPacket = 0;
+        if (bno055.queryChunk_16(a, bno055::QUA_Data_w_LSB, 14)) {
             std::vector<unsigned char> newPacket;
             packData(data.toFloats(), newPacket);
-
-            // TESTING
-//            printf("New Packet: ");
-//            for (int i = 0; i < IMU_PACKET_SIZE; ++i)
-//                printf("%u", newPacket[i]);
-//
-//            printf("\n");
-
-//            std::cout << p->ai_addr->sa_data << std::endl;
-            //END TESTING
 
             // send the packet on transmissionPort
             if ((numBytes = sendto(sockfd, newPacket.data(), IMU_PACKET_SIZE, 0,
@@ -120,6 +117,35 @@ namespace RealTimeLidar {
                 exit(1);
             }
         }
+        // END TESTING NEW
+
+//        // query the data
+//        bno055::ImuData_16 data;
+//        if (bno055.queryImuData(&data)) {
+//
+//
+//            // create the packet
+//            //unsigned char *newPacket = 0;
+//            std::vector<unsigned char> newPacket;
+//            packData(data.toFloats(), newPacket);
+//
+//            // TESTING
+////            printf("New Packet: ");
+////            for (int i = 0; i < IMU_PACKET_SIZE; ++i)
+////                printf("%u", newPacket[i]);
+////
+////            printf("\n");
+//
+////            std::cout << p->ai_addr->sa_data << std::endl;
+//            //END TESTING
+//
+//            // send the packet on transmissionPort
+//            if ((numBytes = sendto(sockfd, newPacket.data(), IMU_PACKET_SIZE, 0,
+//                                   p->ai_addr, p->ai_addrlen)) == -1) {
+//                perror("talker: sendto");
+//                exit(1);
+//            }
+//        }
     }
 
     void IMUPacketTransmitter::printOrientation() {

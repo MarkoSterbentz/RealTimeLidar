@@ -38,9 +38,6 @@ else
 			sudo ip addr flush dev $INTERFACE
 			sudo ip route flush dev $INTERFACE
 			sudo ip link set $INTERFACE down
-
-			# Restart the default ethernet internet connection
-			sudo netctl start ethernet-dhcp
 		else
 			echo "'"$ARG"' is not a valid argument."
 		fi

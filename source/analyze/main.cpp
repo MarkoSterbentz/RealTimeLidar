@@ -90,6 +90,7 @@ int main(int argc, char* argv[]) {
     ImuReader imuReader;
     ArgumentHandler argHandler(&receiver);
 
+    imuReceiver.setStreamMedium(IMU);
 
     ListeningThreadData ltd = { &receiver, &analyzer, false, &argHandler };
     SDL_Thread* packetListeningThread = NULL;
@@ -119,6 +120,7 @@ int main(int argc, char* argv[]) {
     if (argHandler.isOptionEnabled(STREAM)) {
         initPacketHandling(ltd, &packetListeningThread);
 //        initRegistration(rtd, &registrationThread);
+        initImu(itd, &imuThread);
     }
 
     /* Begin the main loop on this thread: */
@@ -214,12 +216,15 @@ int imuThreadFunction(void* arg) {
     while (!idt->imuQuit) {
         idt->imuReceiver->listenForDataPacket();
         if(idt->imuReceiver->getPacketQueueSize() > 0) {
+            std::cout << "received an imu packet." << std::endl;
             //TODO: Set up imu packet writing to file, like in the data listening thread
             idt->imuAnalyzer->loadPacket(idt->imuReceiver->getNextQueuedPacket());
             idt->imuReceiver->popQueuedPacket();
             ExtractedIMUData data = idt->imuAnalyzer->extractIMUData();
-            printf("IMU Data: orientation : {%f, %f, %f,}  |  linAccel : {%f, %f, %f}\n",
-                   data.orient[0], data.orient[1], data.orient[2], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
+//            printf("IMU Data: orientation : {%f, %f, %f,}  |  linAccel : {%f, %f, %f}\n",
+//                   data.orient[0], data.orient[1], data.orient[2], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
+            printf("IMU Data: orientation : {%f, %f, %f, %f}  |  linAccel : {%f, %f, %f}\n",
+                   data.quat[0], data.quat[1], data.quat[2], data.quat[4], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
             //TODO: Send the imu data wherever we want now
         }
     }
@@ -252,6 +257,9 @@ void stopRegistration(RegistrationThreadData& rtd, SDL_Thread** registrationThre
 
 void initImu(ImuThreadData& itd, SDL_Thread** imuThread) {
 //    itd.imu->init();
+    itd.imuReceiver->openOutputFile();
+    itd.imuReceiver->bindSocket();
+
     *imuThread = SDL_CreateThread(imuThreadFunction, "imu thread", (void*) &itd);
 }
 

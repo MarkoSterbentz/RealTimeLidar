@@ -20,10 +20,18 @@ namespace RealTimeLidar {
      * UTILITY METHODS
      *****************************************************/
     ExtractedIMUData IMUPacketAnalyzer::extractIMUData() {
-        ExtractedIMUData data = {.orient = {-1,-1,-1}, .linAccel = {-1,-1,-1}};
-        for(int i = 0; i < 3; ++i) {
-            data.orient[i] = ((float*) currentPacket)[i];
-            data.linAccel[i]= ((float*) currentPacket)[i+3];
+//        ExtractedIMUData data = {.orient = {-1,-1,-1}, .linAccel = {-1,-1,-1}};
+//        for(int i = 0; i < 3; ++i) {
+//            data.orient[i] = ((float*) currentPacket)[i];
+//            data.linAccel[i]= ((float*) currentPacket)[i+3];
+//        }
+//        return data;
+        ExtractedIMUData data = {.quat = {-1,-1,-1,-1}, .linAccel = {-1,-1,-1}};
+        for(int i = 0; i < 4; ++i) {
+            data.quat[i] = ((float*) currentPacket)[i];
+        }
+        for(int i = 4; i < 7; ++i) {
+            data.linAccel[i]= ((float*) currentPacket)[i];
         }
         return data;
     }

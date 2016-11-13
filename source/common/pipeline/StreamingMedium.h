@@ -11,7 +11,7 @@
 #define VELODYNE_TRANSMISSION_PORT "2368"       // port number the Velodyne hardware transmits on
 
 #define VELODYNE_PACKET_SIZE 1249               // size of the packet the Velodyne hardware transmits
-#define IMU_PACKET_SIZE 24                      // size of the packet we create to transmit
+#define IMU_PACKET_SIZE 28  //24                // size of the packet we create to transmit
 
 #define FORWARD_IP_ADDRESS "10.42.0.1"          // the IP address of the laptop / hardware running the analyze program
 #define VELODYNE_FORWARD_PORT "22023"           // port number VelodynePacketTransmitter transmits on
