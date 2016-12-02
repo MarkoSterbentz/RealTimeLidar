@@ -25,9 +25,19 @@
 
 namespace RealTimeLidar {
 
-    LasFile::LasFile(const char* name) {
-        lasReadOpener.set_file_name(name);
-        lasReader = lasReadOpener.open();
-        lasWriteOpener.set_file_name(name);
+    LasFile::LasFile(const char* name, int how) {
+        switch(how) {
+            case READ:
+                break;
+            case WRITE:
+                break;
+            case APPEND:
+                break;
+            default:
+                exit(1);
+        }
+//        lasReadOpener.set_file_name(name);
+//        lasReader = lasReadOpener.open();
+//        lasWriteOpener.set_file_name(name);
     }
 }
