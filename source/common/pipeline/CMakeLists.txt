@@ -7,6 +7,7 @@ add_library( pipeline STATIC
         PacketAnalyzer.cpp
         PacketReceiver.cpp
         VelodynePacketTransmitter.cpp
+        LasFile.cpp
         )
 target_link_libraries( pipeline
         structures
