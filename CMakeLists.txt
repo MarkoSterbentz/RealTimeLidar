@@ -29,6 +29,7 @@ include_directories( SYSTEM extern/bno055_uartSimple )
 include_directories( SYSTEM extern/Eigen )
 include_directories( SYSTEM extern/glm )
 include_directories( SYSTEM extern/ReaderWriterQueue )
-include_directories(  extern/LASlib)
+include_directories( SYSTEM extern/LAStools )
+include_directories( SYSTEM extern/LAStools/LASzip/src )
 
 add_subdirectory("./source")
