@@ -32,8 +32,14 @@ namespace RealTimeLidar {
         LASreader* lasReader;
         LASwriteOpener lasWriteOpener;
         LASwriter* lasWriter;
+        LASheader lasheader;
     public:
-        LasFile(const char* name);
+        enum {
+            READ,
+            WRITE,
+            APPEND,
+        };
+        LasFile(const char* name, int how);
     };
 }
 
