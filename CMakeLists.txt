@@ -31,5 +31,6 @@ include_directories( SYSTEM extern/glm )
 include_directories( SYSTEM extern/ReaderWriterQueue )
 include_directories( SYSTEM extern/LAStools )
 include_directories( SYSTEM extern/LAStools/LASzip/src )
+include_directories( SYSTEM extern/assemblyLine/inc )
 
 add_subdirectory("./source")

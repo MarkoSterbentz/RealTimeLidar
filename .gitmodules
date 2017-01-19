@@ -1,3 +1,6 @@
 [submodule "bno055_uartSimple"]
 	path = extern/bno055_uartSimple
 	url = https://www.github.com/a-day-old-bagel/bno055_uartSimple
+[submodule "extern/assemblyLine"]
+	path = extern/assemblyLine
+	url = git@github.com:a-day-old-bagel/assemblyLine

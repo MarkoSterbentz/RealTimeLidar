@@ -7,8 +7,8 @@ add_library( gui STATIC
     )
 
 target_link_libraries( gui
+    shaders
     pipeline
-    fileIO
     ${GLEW_LIBRARIES}
     ${OPENGL_LIBRARIES}
     )
