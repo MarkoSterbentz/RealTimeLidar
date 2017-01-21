@@ -9,13 +9,13 @@
 #include "Graphics.h"
 #include "Grid.h"
 #include "GridDrawer.h"
-#include "readerwriterqueue.h"
 #include "PacketReceiver.h"
 #include "ImuReader.h"
 #include "Controls.h"
 #include "ArgumentHandler.h"
 #include "DataPacketAnalyzer.h"
 #include "IMUPacketAnalyzer.h"
+#include "assemblyLine.hpp"
 
 //#define SHOW_NONCONTRIBUTING_POINTS
 #include "Registrar.h"
@@ -53,6 +53,40 @@ struct ImuThreadData {
     bool imuQuit;
 };
 
+class ListeningModule : public assemblyLine::Module<ListeningModule, unsigned char*, CartesianPoint> {
+    int packetsReadCount = 0;
+public:
+    PacketReceiver receiver;
+    DataPacketAnalyzer analyzer;
+    ArgumentHandler argHandler;
+    ListeningModule(int argc, char* argv[]) : argHandler(&receiver) {
+        argHandler.handleCommandLineFlags(argc, argv, receiver);
+        receiver.openInputFile();
+    };
+    void operate() {
+        if (receiver.getStreamMedium() == VELODYNE_FORWARDER) { //VELODYNE) {
+            receiver.listenForDataPacket();
+        } else if (receiver.getStreamMedium() == INPUTFILE
+                   && !receiver.endOfInputDataFile()
+                   && packetsReadCount < receiver.getNumPacketsToRead()) {
+            receiver.readDataPacketsFromFile(1);
+            ++packetsReadCount;
+        }
+        // handle any incoming packet
+        if (receiver.getPacketQueueSize() > 0) {
+            if (argHandler.isOptionEnabled(WRITE)) {
+                receiver.writePacketToFile(receiver.getNextQueuedPacket());
+            }
+            analyzer.loadPacket(receiver.getNextQueuedPacket());
+            receiver.popQueuedPacket();    // packet has been read, get rid of it
+            std::vector<CartesianPoint> newPoints(analyzer.getCartesianPoints());
+            for (unsigned j = 0; j < newPoints.size(); ++j) {
+                output->enqueue(newPoints[j]);
+            }
+        }
+    }
+};
+
 // The grid and drawer
 // constructor min/max arguments are in millimeters (the LIDAR device is at the origin)
 // Arguments are: minX, maxX, minY, maxY, resX, resY, max number of points present
@@ -66,7 +100,6 @@ Graphics graphics;
 moodycamel::ReaderWriterQueue<CartesianPoint> rawQueue(MAX_POINTS_IN_GRID);
 //moodycamel::ReaderWriterQueue<CartesianPoint> registeredQueue(MAX_POINTS_IN_GRID);
 
-// prototypes
 void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls, ArgumentHandler &argHandler);
 void initPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread);
 void stopPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread);
@@ -84,10 +117,13 @@ int main(int argc, char* argv[]) {
 
     PacketReceiver receiver;
     DataPacketAnalyzer analyzer;
+
 //    Registrar<CartesianPoint> registrar(&rawQueue, &registeredQueue, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY);
+
     PacketReceiver imuReceiver;
     IMUPacketAnalyzer imuAnalyzer;
     ImuReader imuReader;
+
     ArgumentHandler argHandler(&receiver);
 
     imuReceiver.setStreamMedium(IMU);
