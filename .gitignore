@@ -4,4 +4,5 @@ clion*
 build
 buildManual
 extra
+/cmake-build*
 
