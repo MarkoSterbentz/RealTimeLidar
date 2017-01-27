@@ -107,71 +107,8 @@ public:
     }
 };
 
-// The grid and drawer
-// constructor min/max arguments are in millimeters (the LIDAR device is at the origin)
-// Arguments are: minX, maxX, minY, maxY, resX, resY, max number of points present
-Grid<CartesianPoint> grid(-5000.f, 5000.f, -5000.f, 5000.f, 10, 10, MAX_POINTS_IN_GRID);
-GridDrawer<CartesianPoint> gridDrawer;
-
-// The gui backend
-Graphics graphics;
-
-void initKernel();
-int initGraphics(Camera& camera);
-int main(int argc, char* argv[]) {
-
-    //TODO: PURE EVIL: Try switching the next two lines around
-    IcpModule icpModule;
-    ListeningModule listeningModule(argc, argv);
-    assemblyLine::Chain<CartesianPoint, ListeningModule, IcpModule> pipeline(&listeningModule, &icpModule);
-
-    // This sets up the kerning tools used for data analysis
-    initKernel();
-    // Camera parameters: Vertical FOV, Near Plane, Far Plane, Aspect, Theta, Phi, Distance, DistMin, DistMax
-    Camera camera(1.0, 10.0f, 100000.0, 1, 0.0, 1.2, 2000.0, 100.f, 10000.f);
-    Controls controls;
-
-    if (listeningModule.argHandler.isOptionEnabled(GRAPHICS)) {
-        if (initGraphics(camera) == 1) {
-            return 1;
-        }
-        controls.init();
-    }
-
-    if (listeningModule.argHandler.isOptionEnabled(STREAM)) {
-        pipeline.engage();
-    }
-
-    /* Main loop on this thread: */
-    bool loop = true;
-    while (loop) {
-        /**************************** HANDLE INCOMING POINTS ********************************/
-        CartesianPoint p;
-        while (pipeline.results.try_dequeue(p)) {
-            grid.addPoint(p);
-        }
-        if (listeningModule.argHandler.isOptionEnabled(GRAPHICS)) {
-            /**************************** HANDLE CONTROLS ********************************/
-            int timeToQuit = controls.update(listeningModule.receiver, camera, gridDrawer); // returns 1 if quit events happen
-            if (timeToQuit) {
-                loop = false;
-            }
-            /**************************** DO THE DRAWING *********************************/
-            // draw the grid
-            gridDrawer.drawGrid();
-            // update the screen
-            graphics.render();
-        }
-    }
-
-    if (listeningModule.argHandler.isOptionEnabled(STREAM)) {
-        pipeline.disengage();
-    }
-
-    return 0;
-}
-
-void initKernel() {
+template <typename P>
+void initKernel(Grid<P>& grid) {
     /* KERNEL IMPLEMENTATIONS: */
     auto avgKernel = [] (Grid<CartesianPoint>* pGrid, int x, int y){ // x and y determine which grid cell is being operated on
         int totalPointsCounted = 0;
@@ -209,14 +146,69 @@ void initKernel() {
     }
 }
 
-int initGraphics(Camera& camera) {
-    std::stringstream log;
-    if (!graphics.init(log)) { // if init fails, exit
+int main(int argc, char* argv[]) {
+
+    // The grid and drawer
+    // constructor min/max arguments are in millimeters (the LIDAR device is at the origin)
+    // Arguments are: minX, maxX, minY, maxY, resX, resY, max number of points present
+    Grid<CartesianPoint> grid(-5000.f, 5000.f, -5000.f, 5000.f, 10, 10, MAX_POINTS_IN_GRID);
+    GridDrawer<CartesianPoint> gridDrawer;
+
+    // The gui backend
+    Graphics graphics;
+
+    //TODO: PURE EVIL: Try switching the next two lines around
+    IcpModule icpModule;
+    ListeningModule listeningModule(argc, argv);
+    assemblyLine::Chain<CartesianPoint, ListeningModule, IcpModule> pipeline(&listeningModule, &icpModule);
+
+    // This sets up the kerning tools used for data analysis
+    initKernel(grid);
+    // Camera parameters: Vertical FOV, Near Plane, Far Plane, Aspect, Theta, Phi, Distance, DistMin, DistMax
+    Camera camera(1.0, 10.0f, 100000.0, 1, 0.0, 1.2, 2000.0, 100.f, 10000.f);
+    Controls controls;
+
+    if (listeningModule.argHandler.isOptionEnabled(GRAPHICS)) {
+        std::stringstream log;
+        if (!graphics.init(log)) { // if init fails, exit
+            std::cout << log.str();
+            return 1;
+        }
+        camera.setAspect(graphics.getAspectRatio());
+        gridDrawer.init(&grid, &camera, 0, log);
         std::cout << log.str();
-        return 1;
+        controls.init();
     }
-    camera.setAspect(graphics.getAspectRatio());
-    gridDrawer.init(&grid, &camera, 0, log);
-    std::cout << log.str();
+
+    if (listeningModule.argHandler.isOptionEnabled(STREAM)) {
+        pipeline.engage();
+    }
+
+    /* Main loop on this thread: */
+    bool loop = true;
+    while (loop) {
+        /**************************** HANDLE INCOMING POINTS ********************************/
+        CartesianPoint p;
+        while (pipeline.results.try_dequeue(p)) {
+            grid.addPoint(p);
+        }
+        if (listeningModule.argHandler.isOptionEnabled(GRAPHICS)) {
+            /**************************** HANDLE CONTROLS ********************************/
+            int timeToQuit = controls.update(listeningModule.receiver, camera, gridDrawer); // returns 1 if quit events happen
+            if (timeToQuit) {
+                loop = false;
+            }
+            /**************************** DO THE DRAWING *********************************/
+            // draw the grid
+            gridDrawer.drawGrid();
+            // update the screen
+            graphics.render();
+        }
+    }
+
+    if (listeningModule.argHandler.isOptionEnabled(STREAM)) {
+        pipeline.disengage();
+    }
+
     return 0;
 }
