@@ -36,34 +36,38 @@
 
 using namespace RealTimeLidar;
 
-struct ListeningThreadData {
-    PacketReceiver* receiver;
-    DataPacketAnalyzer* analyzer;
-    bool packetHandlerQuit;
-    ArgumentHandler* argHandler;
-};
-struct RegistrationThreadData {
-    Registrar<CartesianPoint>* registrar;
-    bool registrationQuit;
-};
-struct ImuThreadData {
-//    ImuReader* imu;
-    PacketReceiver* imuReceiver;
-    IMUPacketAnalyzer* imuAnalyzer;
-    bool imuQuit;
-};
-
-class ListeningModule : public assemblyLine::Module<ListeningModule, unsigned char*, CartesianPoint> {
+class ListeningModule : public assemblyLine::Module<ListeningModule, void*, CartesianPoint> {
     int packetsReadCount = 0;
 public:
+    ArgumentHandler argHandler;
     PacketReceiver receiver;
     DataPacketAnalyzer analyzer;
-    ArgumentHandler argHandler;
+    PacketReceiver imuReceiver;
+    IMUPacketAnalyzer imuAnalyzer;
     ListeningModule(int argc, char* argv[]) : argHandler(&receiver) {
         argHandler.handleCommandLineFlags(argc, argv, receiver);
-        receiver.openInputFile();
     };
-    void operate() {
+    void init() {
+        receiver.openInputFile();
+        imuReceiver.setStreamMedium(IMU);
+        imuReceiver.openOutputFile();
+        imuReceiver.bindSocket();
+    }
+    void operate() { // Listen for any incoming point data or imu data packets
+        // IMU section (used to be separate from point data section, and on a different thread)
+        imuReceiver.listenForDataPacket();
+        if(imuReceiver.getPacketQueueSize() > 0) {
+            //TODO: Set up imu packet writing to file, like in the data listening code above
+            imuAnalyzer.loadPacket(imuReceiver.getNextQueuedPacket());
+            imuReceiver.popQueuedPacket();
+            ExtractedIMUData data = imuAnalyzer.extractIMUData();
+            printf("IMU Data: orientation : {%f, %f, %f, %f}  |  linAccel : {%f, %f, %f}\n",
+                   data.quat[0], data.quat[1], data.quat[2], data.quat[3], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
+            //TODO: Send the imu data wherever we want now
+            //TODO: Enqueue the imu data in such a way that registration can use it along with the point data
+            //TODO: Maybe every time registrar receives an imu item, it updates some state used in registering the points
+        }
+        // Point data section (used to be separate from imu section, and on a different thread)
         if (receiver.getStreamMedium() == VELODYNE_FORWARDER) { //VELODYNE) {
             receiver.listenForDataPacket();
         } else if (receiver.getStreamMedium() == INPUTFILE
@@ -85,6 +89,22 @@ public:
             }
         }
     }
+    void deinit() { }
+};
+
+class IcpModule : public assemblyLine::Module<IcpModule, CartesianPoint, CartesianPoint> {
+    Registrar<CartesianPoint>* registrar;
+public:
+    IcpModule() { }
+    void init() {
+        registrar = new Registrar<CartesianPoint>(&input, output, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY);
+    }
+    void operate() {
+        registrar->runICP();
+    }
+    void deinit() {
+        delete registrar;
+    }
 };
 
 // The grid and drawer
@@ -96,49 +116,14 @@ GridDrawer<CartesianPoint> gridDrawer;
 // The gui backend
 Graphics graphics;
 
-// This is a thread safe queue designed for one producer and one consumer
-moodycamel::ReaderWriterQueue<CartesianPoint> rawQueue(MAX_POINTS_IN_GRID);
-//moodycamel::ReaderWriterQueue<CartesianPoint> registeredQueue(MAX_POINTS_IN_GRID);
-
-void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls, ArgumentHandler &argHandler);
-void initPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread);
-void stopPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread);
-void initRegistration(RegistrationThreadData& rtd, SDL_Thread** registrationThread);
-void stopRegistration(RegistrationThreadData& rtd, SDL_Thread** registrationThread);
-void initImu(ImuThreadData& itd, SDL_Thread** imuThread);
-void stopImu(ImuThreadData& itd, SDL_Thread** imuThread);
 void initKernel();
 int initGraphics(Camera& camera);
-int listeningThreadFunction(void* listeningThreadData);
-int registrationThreadFunction(void* arg);
-int imuThreadFunction(void* arg);
-
 int main(int argc, char* argv[]) {
 
-    PacketReceiver receiver;
-    DataPacketAnalyzer analyzer;
-
-//    Registrar<CartesianPoint> registrar(&rawQueue, &registeredQueue, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY);
-
-    PacketReceiver imuReceiver;
-    IMUPacketAnalyzer imuAnalyzer;
-    ImuReader imuReader;
-
-    ArgumentHandler argHandler(&receiver);
-
-    imuReceiver.setStreamMedium(IMU);
-
-    ListeningThreadData ltd = { &receiver, &analyzer, false, &argHandler };
-    SDL_Thread* packetListeningThread = NULL;
-
-//    RegistrationThreadData rtd = { &registrar, false };
-//    SDL_Thread* registrationThread = NULL;
-
-    ImuThreadData itd = { &imuReceiver, &imuAnalyzer, false };
-    SDL_Thread* imuThread = NULL;
-
-    argHandler.handleCommandLineFlags(argc, argv, receiver);
-    receiver.openInputFile();
+    //TODO: PURE EVIL: Try switching the next two lines around
+    IcpModule icpModule;
+    ListeningModule listeningModule(argc, argv);
+    assemblyLine::Chain<CartesianPoint, ListeningModule, IcpModule> pipeline(&listeningModule, &icpModule);
 
     // This sets up the kerning tools used for data analysis
     initKernel();
@@ -146,49 +131,28 @@ int main(int argc, char* argv[]) {
     Camera camera(1.0, 10.0f, 100000.0, 1, 0.0, 1.2, 2000.0, 100.f, 10000.f);
     Controls controls;
 
-    if (argHandler.isOptionEnabled(GRAPHICS)) {
+    if (listeningModule.argHandler.isOptionEnabled(GRAPHICS)) {
         if (initGraphics(camera) == 1) {
             return 1;
         }
         controls.init();
     }
 
-    if (argHandler.isOptionEnabled(STREAM)) {
-        initPacketHandling(ltd, &packetListeningThread);
-//        initRegistration(rtd, &registrationThread);
-        initImu(itd, &imuThread);
+    if (listeningModule.argHandler.isOptionEnabled(STREAM)) {
+        pipeline.engage();
     }
 
-    /* Begin the main loop on this thread: */
-    mainLoop(receiver, camera, controls, argHandler);
-
-    if (argHandler.isOptionEnabled(STREAM)) {
-        stopPacketHandling(ltd, &packetListeningThread);
-//        stopRegistration(rtd, &registrationThread);
-        stopImu(itd, &imuThread);
-    }
-
-//    if (!argHandler.isOptionEnabled(GRAPHICS)) {
-//        stopImu(itd, &imuThread);
-//    }
-
-    return 0;
-}
-
-void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls, ArgumentHandler &argHandler) {
+    /* Main loop on this thread: */
     bool loop = true;
-
     while (loop) {
         /**************************** HANDLE INCOMING POINTS ********************************/
         CartesianPoint p;
-//        while (registeredQueue.try_dequeue(p)) {
-        while (rawQueue.try_dequeue(p)) {
+        while (pipeline.results.try_dequeue(p)) {
             grid.addPoint(p);
         }
-
-        if (argHandler.isOptionEnabled(GRAPHICS)) {
+        if (listeningModule.argHandler.isOptionEnabled(GRAPHICS)) {
             /**************************** HANDLE CONTROLS ********************************/
-            int timeToQuit = controls.update(receiver, camera, gridDrawer); // returns 1 if quit events happen
+            int timeToQuit = controls.update(listeningModule.receiver, camera, gridDrawer); // returns 1 if quit events happen
             if (timeToQuit) {
                 loop = false;
             }
@@ -199,108 +163,12 @@ void mainLoop(PacketReceiver& receiver, Camera& camera, Controls& controls, Argu
             graphics.render();
         }
     }
-}
 
-// This function runs inside the listeningThread.
-int listeningThreadFunction(void* arg) {
-    std::cout << "Packet handling thread is active.\n";
-
-    ListeningThreadData* ltd = (ListeningThreadData*) arg;
-    int packetsReadCount = 0;
-
-    while (!ltd->packetHandlerQuit) {
-        /*************************** HANDLE PACKETS *********************************/
-        if (ltd->receiver->getStreamMedium() == VELODYNE_FORWARDER) { //VELODYNE) {
-            ltd->receiver->listenForDataPacket();
-        } else if (ltd->receiver->getStreamMedium() == INPUTFILE
-                   && !ltd->receiver->endOfInputDataFile()
-                   && packetsReadCount < ltd->receiver->getNumPacketsToRead()) {
-            ltd->receiver->readDataPacketsFromFile(1);
-            ++packetsReadCount;
-        }
-        // handle any incoming packet
-        if (ltd->receiver->getPacketQueueSize() > 0) {
-            if (ltd->argHandler->isOptionEnabled(WRITE)) {
-                ltd->receiver->writePacketToFile(ltd->receiver->getNextQueuedPacket());
-            }
-            ltd->analyzer->loadPacket(ltd->receiver->getNextQueuedPacket());
-            ltd->receiver->popQueuedPacket();    // packet has been read, get rid of it
-            std::vector<CartesianPoint> newPoints(ltd->analyzer->getCartesianPoints());
-            for (unsigned j = 0; j < newPoints.size(); ++j) {
-                rawQueue.enqueue(newPoints[j]);
-            }
-        }
+    if (listeningModule.argHandler.isOptionEnabled(STREAM)) {
+        pipeline.disengage();
     }
+
     return 0;
-}
-
-int registrationThreadFunction(void* arg) {
-    std::cout << "Point registration thread is active.\n";
-    RegistrationThreadData* rtd = (RegistrationThreadData*) arg;
-    while (!rtd->registrationQuit) {
-        rtd->registrar->runICP();
-    }
-    return 0;
-}
-
-int imuThreadFunction(void* arg) {
-    std::cout << "IMU reading thread is active.\n";
-    ImuThreadData* idt = (ImuThreadData*) arg;
-//    while (!idt->imuQuit) {
-//        idt->imu->printOrientation();
-//    }
-    while (!idt->imuQuit) {
-        idt->imuReceiver->listenForDataPacket();
-        if(idt->imuReceiver->getPacketQueueSize() > 0) {
-            //TODO: Set up imu packet writing to file, like in the data listening thread
-            idt->imuAnalyzer->loadPacket(idt->imuReceiver->getNextQueuedPacket());
-            idt->imuReceiver->popQueuedPacket();
-            ExtractedIMUData data = idt->imuAnalyzer->extractIMUData();
-//            printf("IMU Data: orientation : {%f, %f, %f,}  |  linAccel : {%f, %f, %f}\n",
-//                   data.orient[0], data.orient[1], data.orient[2], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
-            printf("IMU Data: orientation : {%f, %f, %f, %f}  |  linAccel : {%f, %f, %f}\n",
-                   data.quat[0], data.quat[1], data.quat[2], data.quat[3], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
-            //TODO: Send the imu data wherever we want now
-        }
-    }
-    return 0;
-}
-
-void initPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread) {
-    // packet handler setup
-    ltd.receiver->openOutputFile();
-    ltd.receiver->bindSocket();
-
-    // spawn the listening thread, passing it information in "data"
-    *packetListeningThread = SDL_CreateThread (listeningThreadFunction, "listening thread", (void *) &ltd);
-}
-
-void stopPacketHandling(ListeningThreadData& ltd, SDL_Thread** packetListeningThread) {
-    // once the main loop has exited, set the listening thread's "quit" to true and wait for the thread to die.
-    ltd.packetHandlerQuit = true;
-    SDL_WaitThread(*packetListeningThread, NULL);
-}
-
-void initRegistration(RegistrationThreadData& rtd, SDL_Thread** registrationThread) {
-    *registrationThread = SDL_CreateThread(registrationThreadFunction, "point registration thread", (void *) &rtd);
-}
-
-void stopRegistration(RegistrationThreadData& rtd, SDL_Thread** registrationThread) {
-    rtd.registrationQuit = true;
-    SDL_WaitThread(*registrationThread, NULL);
-}
-
-void initImu(ImuThreadData& itd, SDL_Thread** imuThread) {
-//    itd.imu->init();
-    itd.imuReceiver->openOutputFile();
-    itd.imuReceiver->bindSocket();
-
-    *imuThread = SDL_CreateThread(imuThreadFunction, "imu thread", (void*) &itd);
-}
-
-void stopImu(ImuThreadData& itd, SDL_Thread** imuThread) {
-    itd.imuQuit = true;
-    SDL_WaitThread(*imuThread, NULL);
 }
 
 void initKernel() {
