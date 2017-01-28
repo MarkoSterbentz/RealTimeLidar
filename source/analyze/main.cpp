@@ -49,6 +49,7 @@ public:
     };
     void init() {
         receiver.openInputFile();
+        receiver.bindSocket();
         imuReceiver.setStreamMedium(IMU);
         imuReceiver.openOutputFile();
         imuReceiver.bindSocket();
@@ -68,7 +69,7 @@ public:
             //TODO: Maybe every time registrar receives an imu item, it updates some state used in registering the points
         }
         // Point data section (used to be separate from imu section, and on a different thread)
-        if (receiver.getStreamMedium() == VELODYNE_FORWARDER) { //VELODYNE) {
+        if (receiver.getStreamMedium() == VELODYNE_FORWARDER || receiver.getStreamMedium() == VELODYNE) {
             receiver.listenForDataPacket();
         } else if (receiver.getStreamMedium() == INPUTFILE
                    && !receiver.endOfInputDataFile()
