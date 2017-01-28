@@ -127,7 +127,7 @@ namespace RealTimeLidar {
 
     template<class P>
     void Grid<P>::removeOldestInCell(unsigned long cellIndex) {
-        if (cellIndex < cells.size()) {
+        if (cellIndex < cells.size() && cells[cellIndex].points.empty()) {
             cells[cellIndex].points.pop_front();
         }
     }
