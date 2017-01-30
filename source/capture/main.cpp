@@ -132,7 +132,7 @@ int imuThreadFunction(void* arg) {
 
     while (!idt->imuQuit) {
         idt->imuTransmitter->transmitData();
-        usleep(1000000);
+        usleep(10000);
     }
     return 0;
 }
