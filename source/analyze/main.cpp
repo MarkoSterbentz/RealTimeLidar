@@ -36,7 +36,18 @@
 
 using namespace RealTimeLidar;
 
-class ListeningModule : public assemblyLine::Module<ListeningModule, void*, CartesianPoint> {
+struct PointOrImuPacket {
+    union {
+        ExtractedIMUData imu;
+        CartesianPoint point;
+    };
+    bool isImuPacket = false;
+    float& x() { return point.x; }
+    float& y() { return point.y; }
+    float& z() { return point.z; }
+};
+
+class ListeningModule : public assemblyLine::Module<ListeningModule, void*, PointOrImuPacket> {
     int packetsReadCount = 0;
 public:
     ArgumentHandler argHandler;
@@ -62,11 +73,10 @@ public:
             imuAnalyzer.loadPacket(imuReceiver.getNextQueuedPacket());
             imuReceiver.popQueuedPacket();
             ExtractedIMUData data = imuAnalyzer.extractIMUData();
-            printf("IMU Data: orientation : {%f, %f, %f, %f}  |  linAccel : {%f, %f, %f}\n",
-                   data.quat[0], data.quat[1], data.quat[2], data.quat[3], data.linAccel[0], data.linAccel[1], data.linAccel[2]);
-            //TODO: Send the imu data wherever we want now
-            //TODO: Enqueue the imu data in such a way that registration can use it along with the point data
-            //TODO: Maybe every time registrar receives an imu item, it updates some state used in registering the points
+            PointOrImuPacket outputData;
+            outputData.imu = data;
+            outputData.isImuPacket = true;
+            output->enqueue(outputData);
         }
         // Point data section (used to be separate from imu section, and on a different thread)
         if (receiver.getStreamMedium() == VELODYNE_FORWARDER || receiver.getStreamMedium() == VELODYNE) {
@@ -86,25 +96,42 @@ public:
             receiver.popQueuedPacket();    // packet has been read, get rid of it
             std::vector<CartesianPoint> newPoints(analyzer.getCartesianPoints());
             for (unsigned j = 0; j < newPoints.size(); ++j) {
-                output->enqueue(newPoints[j]);
+                PointOrImuPacket outputData;
+                outputData.point = newPoints[j];
+                outputData.isImuPacket = false;
+                output->enqueue(outputData);
             }
         }
     }
     void deinit() { }
 };
 
-class IcpModule : public assemblyLine::Module<IcpModule, CartesianPoint, CartesianPoint> {
-    Registrar<CartesianPoint>* registrar;
+class IcpModule : public assemblyLine::Module<IcpModule, PointOrImuPacket, CartesianPoint> {
+    Registrar<PointOrImuPacket, CartesianPoint>* registrar;
+    Eigen::Affine3f ct; // current transform
 public:
     IcpModule() { }
     void init() {
-        registrar = new Registrar<CartesianPoint>(&input, output, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY);
+        registrar = new Registrar<PointOrImuPacket, CartesianPoint> (
+                &input, output, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY );
     }
     void operate() {
-        registrar->runICP();
+        registrar->operate(ct);
     }
     void deinit() {
         delete registrar;
+    }
+    //TODO: don't return value, pass in reference to avoid copies
+    glm::mat4 getCurrentTransform() {
+        //TODO: the translation bit
+        glm::mat4 result;
+        result = {
+                {ct(0,0), ct(0,1), ct(0,2), 0.f},
+                {ct(1,0), ct(1,1), ct(1,2), 0.f},
+                {ct(2,0), ct(2,1), ct(2,2), 0.f},
+                {ct(3,0), ct(3,1), ct(3,2), ct(3,3)},
+        };
+        return result;
     }
 };
 
@@ -147,6 +174,135 @@ void initKernel(Grid<P>& grid) {
     }
 }
 
+//TODO: probably make this into a normal class
+namespace ArrowRenderer {
+    namespace {
+        bool isInit = false;
+        GLuint shader;
+        GLuint vao;
+        GLuint vertices;
+        GLuint normals;
+        GLint shader_mvMat;
+        GLint shader_mvpMat;
+        GLint shader_color;
+        float currentColor[3];
+        glm::mat4 modelMat;
+    }
+    bool init(std::stringstream& log) {
+        if (isInit) {
+            return false;
+        }
+        isInit = true;
+
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+
+        // set up a simple shader that shades any primitive a single solid color.
+        shader = loadShaders("assets/flatColor.vert", "assets/flatColor.frag", log);
+        GLint shader_vertex = glGetAttribLocation(shader, "vertex");
+        GLint shader_normal = glGetAttribLocation(shader, "normal");
+        shader_mvMat = glGetUniformLocation(shader, "mvMat");
+        shader_mvpMat = glGetUniformLocation(shader, "mvpMat");
+        shader_color = glGetUniformLocation(shader, "color");
+
+        // this is the data that will be buffered up as vertices
+        std::vector<float> verts = {
+              0.f,  150.f,   0.f,
+            -80.f,  -90.f,   0.f,
+              0.f,  -90.f,  25.f,
+
+              0.f,  150.f,   0.f,
+              0.f,  -90.f,  25.f,
+             80.f,  -90.f,   0.f,
+
+              0.f,  150.f,   0.f,
+              0.f,  -90.f, -25.f,
+            -80.f,  -90.f,   0.f,
+
+              0.f,  150.f,   0.f,
+             80.f,  -90.f,   0.f,
+              0.f,  -90.f, -25.f,
+
+              0.f,  -90.f,  25.f,
+            -80.f,  -90.f,   0.f,
+              0.f,  -90.f, -25.f,
+
+              0.f,  -90.f, -25.f,
+             80.f,  -90.f,   0.f,
+              0.f,  -90.f,  25.f,
+        };
+
+        // this is the data that will be buffered up as normals
+        std::vector<float> norms = {
+            -0.296812f, 0.0989372f,  0.949797f,
+            -0.296812f, 0.0989372f,  0.949797f,
+            -0.296812f, 0.0989372f,  0.949797f,
+
+             0.296812f, 0.0989372f,  0.949797f,
+             0.296812f, 0.0989372f,  0.949797f,
+             0.296812f, 0.0989372f,  0.949797f,
+
+            -0.296812f, 0.0989372f, -0.949797f,
+            -0.296812f, 0.0989372f, -0.949797f,
+            -0.296812f, 0.0989372f, -0.949797f,
+
+             0.296812f, 0.0989372f, -0.949797f,
+             0.296812f, 0.0989372f, -0.949797f,
+             0.296812f, 0.0989372f, -0.949797f,
+
+             0.f, -1.f, 0.f,
+             0.f, -1.f, 0.f,
+             0.f, -1.f, 0.f,
+
+             0.f, -1.f, 0.f,
+             0.f, -1.f, 0.f,
+             0.f, -1.f, 0.f,
+        };
+
+        unsigned long vertBufferSizeInBytes = verts.size() * sizeof(float);
+        unsigned long normBufferSizeInBytes = norms.size() * sizeof(float);
+
+        // buffer verts
+        glGenBuffers(1, &vertices);
+        glBindBuffer(GL_ARRAY_BUFFER, vertices);
+        glBufferData(GL_ARRAY_BUFFER, vertBufferSizeInBytes, NULL, GL_STATIC_DRAW);
+        glEnableVertexAttribArray((GLuint) shader_vertex);
+        glVertexAttribPointer((GLuint) shader_vertex, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, verts.size() * sizeof(float), verts.data());
+
+        // buffer norms
+        glGenBuffers(1, &normals);
+        glBindBuffer(GL_ARRAY_BUFFER, normals);
+        glBufferData(GL_ARRAY_BUFFER, normBufferSizeInBytes, NULL, GL_STATIC_DRAW);
+        glEnableVertexAttribArray((GLuint) shader_normal);
+        glVertexAttribPointer((GLuint) shader_normal, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, norms.size() * sizeof(float), norms.data());
+
+        currentColor[0] = 0.3f;
+        currentColor[1] = 0.6f;
+        currentColor[2] = 0.3f;
+
+        return true;
+    }
+    void draw(Camera& camera) {
+        // Bind the VAO
+        glBindVertexArray(vao);
+        // Tell GPU to use the colorShader program for following draw calls
+        glUseProgram(shader);
+        // Upload the mvp matrix to the colorShader program on the GPU
+        glUniformMatrix4fv(shader_mvpMat, 1, GL_FALSE, &((glm::mat4)(camera.getVp() * modelMat))[0][0]);
+        // Upload the mv matrix to the colorShader program on the GPU
+        glUniformMatrix4fv(shader_mvMat, 1, GL_FALSE, &((glm::mat4)(camera.getView() * modelMat))[0][0]);
+        // Upload the color you want to the colorShader program on the GPU
+        glUniform3f(shader_color, currentColor[0], currentColor[1], currentColor[2]);
+        // Draw
+        glDrawArrays(GL_TRIANGLES, 0, (GLsizei) 18);
+    }
+    void setModelMat(const glm::mat4&& mat) {
+        modelMat = mat;
+    }
+}
+
 int main(int argc, char* argv[]) {
 
     // The grid and drawer
@@ -172,6 +328,11 @@ int main(int argc, char* argv[]) {
     if (listeningModule.argHandler.isOptionEnabled(GRAPHICS)) {
         std::stringstream log;
         if (!graphics.init(log)) { // if init fails, exit
+            std::cout << log.str();
+            return 1;
+        }
+        log.clear();
+        if (!ArrowRenderer::init(log)) {
             std::cout << log.str();
             return 1;
         }
@@ -202,6 +363,9 @@ int main(int argc, char* argv[]) {
             /**************************** DO THE DRAWING *********************************/
             // draw the grid
             gridDrawer.drawGrid();
+            // draw IMU position
+            ArrowRenderer::setModelMat(icpModule.getCurrentTransform());
+            ArrowRenderer::draw(camera);
             // update the screen
             graphics.render();
         }

@@ -70,7 +70,7 @@ namespace RealTimeLidar {
         glBindVertexArray(vao);
 
         // set up a simple shader that shades any primitive a single solid color.
-        shader = loadShaders("assets/color.vert", "assets/color.frag", log);
+        shader = loadShaders("assets/sunset.vert", "assets/sunset.frag", log);
         GLint shader_vertex = glGetAttribLocation(shader, "vertex");
         shader_modelMat = glGetUniformLocation(shader, "modelMat");
         shader_color = glGetUniformLocation(shader, "color");
