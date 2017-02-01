@@ -31,7 +31,7 @@ namespace RealTimeLidar {
     public:
         Registrar(moodycamel::ReaderWriterQueue<I>* inQueue, moodycamel::ReaderWriterQueue<O>* outQueue,
                   int numPerCloud, int numHists, int sparsity = 1);
-        void operate(Eigen::Affine3f& transMat);
+        void operate();
     };
 
     template <typename I, typename O>
@@ -88,16 +88,16 @@ namespace RealTimeLidar {
     }
 
     template <typename I, typename O>
-    void Registrar<I, O>::operate(Eigen::Affine3f& transMat) {
+    void Registrar<I, O>::operate() {
         I p;
         while (inQueue->try_dequeue(p)) {
             if (p.isImuPacket == false) {
                 runICP(p);
             } else {
                 //TODO: check out why this works better with a negative z coefficient *facepalm*
-                Eigen::Quaternion<float> quat (p.imu.quat[0], p.imu.quat[1], p.imu.quat[2], -p.imu.quat[3]);
-                quat.normalize();
-                transMat = quat.toRotationMatrix();
+//                Eigen::Quaternion<float> quat (p.imu.quat[0], p.imu.quat[1], p.imu.quat[2], -p.imu.quat[3]);
+//                quat.normalize();
+//                transMat = quat.toRotationMatrix();
             }
         }
     };

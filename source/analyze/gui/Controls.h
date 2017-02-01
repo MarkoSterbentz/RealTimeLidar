@@ -14,10 +14,10 @@ namespace RealTimeLidar {
     class Controls {
         unsigned previousTime, currentTime, deltaTime;
         int pollEvents(PacketReceiver& receiver, Camera& camera, GridDrawer<CartesianPoint>& gridDrawer);
-        void handleKeyState(PacketReceiver& receiver, Camera& camera);
+        void handleKeyState(PacketReceiver& receiver, Camera& camera, bool& brakes);
     public:
         bool init();
-        int update(PacketReceiver& receiver, Camera& camera, GridDrawer<CartesianPoint>& gridDrawer);
+        int update(PacketReceiver& receiver, Camera& camera, GridDrawer<CartesianPoint>& gridDrawer, bool& brakes);
     };
 }
 

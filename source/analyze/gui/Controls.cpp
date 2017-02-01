@@ -65,7 +65,7 @@ namespace RealTimeLidar {
         return 0;
     }
 
-    void Controls::handleKeyState(PacketReceiver& receiver, Camera& camera) {
+    void Controls::handleKeyState(PacketReceiver& receiver, Camera& camera, bool& brakes) {
         // Determine the time step since last time
         currentTime = SDL_GetTicks();
         deltaTime = currentTime - previousTime;
@@ -88,11 +88,12 @@ namespace RealTimeLidar {
         if (keyStates[SDL_SCANCODE_I]) {
             receiver.increaseNumPacketsToRead(1);
         }
+        brakes = keyStates[SDL_SCANCODE_SPACE];
     }
 
-    int Controls::update(PacketReceiver& receiver, Camera& camera, GridDrawer<CartesianPoint>& gridDrawer) {
+    int Controls::update(PacketReceiver& receiver, Camera& camera, GridDrawer<CartesianPoint>& gridDrawer, bool& brakes) {
         int shouldQuit = pollEvents(receiver, camera, gridDrawer);
-        handleKeyState(receiver, camera);
+        handleKeyState(receiver, camera, brakes);
         return shouldQuit;
     }
 }

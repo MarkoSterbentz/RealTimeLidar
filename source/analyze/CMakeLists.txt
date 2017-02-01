@@ -1,6 +1,7 @@
 add_subdirectory( shaders )
 add_subdirectory( gui )
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 add_executable( analyze
     main.cpp
     )

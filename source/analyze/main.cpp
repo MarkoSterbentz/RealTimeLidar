@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include <SDL_timer.h>
-#include <SDL_thread.h>
+#include <omp.h>
 
 #include "Graphics.h"
 #include "Grid.h"
@@ -49,7 +49,11 @@ struct PointOrImuPacket {
 
 class ListeningModule : public assemblyLine::Module<ListeningModule, void*, PointOrImuPacket> {
     int packetsReadCount = 0;
+    Eigen::Affine3f ct; // current transform of IMU
+    Eigen::Vector3f vel;
+    double time;
 public:
+    bool brakesOn = false;
     ArgumentHandler argHandler;
     PacketReceiver receiver;
     DataPacketAnalyzer analyzer;
@@ -64,6 +68,10 @@ public:
         imuReceiver.setStreamMedium(IMU);
         imuReceiver.openOutputFile();
         imuReceiver.bindSocket();
+//        ct = Eigen::Affine3f(0);
+        ct = Eigen::Affine3f(Eigen::Affine3f::Identity());
+        vel = {0.f, 0.f, 0.f};
+        time = omp_get_wtime();
     }
     void operate() { // Listen for any incoming point data or imu data packets
         // IMU section (used to be separate from point data section, and on a different thread)
@@ -73,8 +81,36 @@ public:
             imuAnalyzer.loadPacket(imuReceiver.getNextQueuedPacket());
             imuReceiver.popQueuedPacket();
             ExtractedIMUData data = imuAnalyzer.extractIMUData();
+
+            double dt = omp_get_wtime() - time;
+            if (brakesOn) {
+                vel = {0.f, 0.f, 0.f};
+            } else {
+                time = omp_get_wtime();
+                vel[0] += data.linAccel[0] * 0.01 * dt * (abs(data.linAccel[0]) > 30.f ? 1.f : 0.f);
+                vel[1] += data.linAccel[1] * 0.01 * dt * (abs(data.linAccel[1]) > 30.f ? 1.f : 0.f);
+//            vel[2] += data.linAccel[2] * 0.01;
+                printf("%f, %f, %f, %f, %f, %f\n", data.linAccel[0], data.linAccel[1], data.linAccel[2], vel[0], vel[1],
+                       vel[2]);
+            }
+            Eigen::Vector3f trans{
+                    ct.translation().x() + vel[0] * 1000 * dt,
+                    ct.translation().y() + vel[1] * 1000 * dt,
+                    ct.translation().z() + vel[2] * 1000 * dt,
+            };
+            Eigen::Quaternion<float> quat (data.quat[0], data.quat[1], data.quat[2], data.quat[3]);
+            quat.normalize();
+            ct = Eigen::Affine3f();
+            ct.setIdentity();
+            ct.translate(trans);
+            ct.rotate(quat);
+
+//            ct = quat.toRotationMatrix();
+//            ct.translate(trans);
+
             PointOrImuPacket outputData;
-            outputData.imu = data;
+            outputData.imu = {data.linAccel[0], data.linAccel[1], data.linAccel[2],
+                              quat.w(), quat.x(), quat.y(), quat.z()};
             outputData.isImuPacket = true;
             output->enqueue(outputData);
         }
@@ -104,11 +140,15 @@ public:
         }
     }
     void deinit() { }
+    //TODO: don't return value, pass in reference to avoid copies
+    glm::mat4* getCurrentTransform() {
+        //TODO: the translation bit
+        return (glm::mat4*)ct.data();
+    }
 };
 
 class IcpModule : public assemblyLine::Module<IcpModule, PointOrImuPacket, CartesianPoint> {
     Registrar<PointOrImuPacket, CartesianPoint>* registrar;
-    Eigen::Affine3f ct; // current transform
 public:
     IcpModule() { }
     void init() {
@@ -116,22 +156,10 @@ public:
                 &input, output, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY );
     }
     void operate() {
-        registrar->operate(ct);
+        registrar->operate();
     }
     void deinit() {
         delete registrar;
-    }
-    //TODO: don't return value, pass in reference to avoid copies
-    glm::mat4 getCurrentTransform() {
-        //TODO: the translation bit
-        glm::mat4 result;
-        result = {
-                {ct(0,0), ct(0,1), ct(0,2), 0.f},
-                {ct(1,0), ct(1,1), ct(1,2), 0.f},
-                {ct(2,0), ct(2,1), ct(2,2), 0.f},
-                {ct(3,0), ct(3,1), ct(3,2), ct(3,3)},
-        };
-        return result;
     }
 };
 
@@ -298,8 +326,8 @@ namespace ArrowRenderer {
         // Draw
         glDrawArrays(GL_TRIANGLES, 0, (GLsizei) 18);
     }
-    void setModelMat(const glm::mat4&& mat) {
-        modelMat = mat;
+    void setModelMat(const glm::mat4* mat) {
+        modelMat = *mat;
     }
 }
 
@@ -356,7 +384,7 @@ int main(int argc, char* argv[]) {
         }
         if (listeningModule.argHandler.isOptionEnabled(GRAPHICS)) {
             /**************************** HANDLE CONTROLS ********************************/
-            int timeToQuit = controls.update(listeningModule.receiver, camera, gridDrawer); // returns 1 if quit events happen
+            int timeToQuit = controls.update(listeningModule.receiver, camera, gridDrawer, listeningModule.brakesOn); // returns 1 if quit events happen
             if (timeToQuit) {
                 loop = false;
             }
@@ -364,7 +392,7 @@ int main(int argc, char* argv[]) {
             // draw the grid
             gridDrawer.drawGrid();
             // draw IMU position
-            ArrowRenderer::setModelMat(icpModule.getCurrentTransform());
+            ArrowRenderer::setModelMat(listeningModule.getCurrentTransform());
             ArrowRenderer::draw(camera);
             // update the screen
             graphics.render();
