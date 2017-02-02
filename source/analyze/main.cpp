@@ -68,7 +68,6 @@ public:
         imuReceiver.setStreamMedium(IMU);
         imuReceiver.openOutputFile();
         imuReceiver.bindSocket();
-//        ct = Eigen::Affine3f(0);
         ct = Eigen::Affine3f(Eigen::Affine3f::Identity());
         vel = {0.f, 0.f, 0.f};
         time = omp_get_wtime();
@@ -77,7 +76,7 @@ public:
         // IMU section (used to be separate from point data section, and on a different thread)
         imuReceiver.listenForDataPacket();
         if(imuReceiver.getPacketQueueSize() > 0) {
-            //TODO: Set up imu packet writing to file, like in the data listening code above
+            // TODO: Set up imu packet writing to file, like in the data listening code above
             imuAnalyzer.loadPacket(imuReceiver.getNextQueuedPacket());
             imuReceiver.popQueuedPacket();
             ExtractedIMUData data = imuAnalyzer.extractIMUData();
@@ -93,7 +92,7 @@ public:
                 printf("%f, %f, %f, %f, %f, %f\n", data.linAccel[0], data.linAccel[1], data.linAccel[2], vel[0], vel[1],
                        vel[2]);
             }
-            Eigen::Vector3f trans{
+            Eigen::Vector3f trans {
                     ct.translation().x() + vel[0] * 1000 * dt,
                     ct.translation().y() + vel[1] * 1000 * dt,
                     ct.translation().z() + vel[2] * 1000 * dt,
@@ -104,9 +103,6 @@ public:
             ct.setIdentity();
             ct.translate(trans);
             ct.rotate(quat);
-
-//            ct = quat.toRotationMatrix();
-//            ct.translate(trans);
 
             PointOrImuPacket outputData;
             outputData.imu = {data.linAccel[0], data.linAccel[1], data.linAccel[2],
