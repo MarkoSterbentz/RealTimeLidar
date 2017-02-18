@@ -4,3 +4,6 @@
 [submodule "extern/assemblyLine"]
 	path = extern/assemblyLine
 	url = git@github.com:a-day-old-bagel/assemblyLine
+[submodule "extern/TinyEKF"]
+	path = extern/TinyEKF
+	url = git@github.com:simondlevy/TinyEKF

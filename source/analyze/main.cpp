@@ -36,7 +36,7 @@
 
 using namespace RealTimeLidar;
 
-struct PointOrImuPacket {
+struct ListeningOutput {
     union {
         ExtractedIMUData imu;
         CartesianPoint point;
@@ -47,7 +47,7 @@ struct PointOrImuPacket {
     float& z() { return point.z; }
 };
 
-class ListeningModule : public assemblyLine::Module<ListeningModule, void*, PointOrImuPacket> {
+class ListeningModule : public assemblyLine::Module<ListeningModule, void*, ListeningOutput> {
     int packetsReadCount = 0;
     Eigen::Affine3f ct; // current transform of IMU
     Eigen::Vector3f vel;
@@ -80,22 +80,24 @@ public:
             imuAnalyzer.loadPacket(imuReceiver.getNextQueuedPacket());
             imuReceiver.popQueuedPacket();
             ExtractedIMUData data = imuAnalyzer.extractIMUData();
-
-            double dt = omp_get_wtime() - time;
+            
+            double newTime = omp_get_wtime();
+            double dt = newTime - time;
+            time = newTime;
             if (brakesOn) {
                 vel = {0.f, 0.f, 0.f};
             } else {
-                time = omp_get_wtime();
-                vel[0] += data.linAccel[0] * 0.01 * dt * (abs(data.linAccel[0]) > 30.f ? 1.f : 0.f);
-                vel[1] += data.linAccel[1] * 0.01 * dt * (abs(data.linAccel[1]) > 30.f ? 1.f : 0.f);
-//            vel[2] += data.linAccel[2] * 0.01;
+                double cm_to_mm = 10.;
+                vel[0] += data.linAccel[0] * cm_to_mm * dt * (abs(data.linAccel[0]) > 30.f ? 1.f : 0.f);
+                vel[1] += data.linAccel[1] * cm_to_mm * dt * (abs(data.linAccel[1]) > 30.f ? 1.f : 0.f);
+//            vel[2] += data.linAccel[2] * 0.01; // this one's bugged
                 printf("%f, %f, %f, %f, %f, %f\n", data.linAccel[0], data.linAccel[1], data.linAccel[2], vel[0], vel[1],
                        vel[2]);
             }
             Eigen::Vector3f trans {
-                    ct.translation().x() + vel[0] * 1000 * dt,
-                    ct.translation().y() + vel[1] * 1000 * dt,
-                    ct.translation().z() + vel[2] * 1000 * dt,
+                    (float)(ct.translation().x() + vel[0] * dt),
+                    (float)(ct.translation().y() + vel[1] * dt),
+                    (float)(ct.translation().z() + vel[2] * dt),
             };
             Eigen::Quaternion<float> quat (data.quat[0], data.quat[1], data.quat[2], data.quat[3]);
             quat.normalize();
@@ -104,7 +106,7 @@ public:
             ct.translate(trans);
             ct.rotate(quat);
 
-            PointOrImuPacket outputData;
+            ListeningOutput outputData;
             outputData.imu = {data.linAccel[0], data.linAccel[1], data.linAccel[2],
                               quat.w(), quat.x(), quat.y(), quat.z()};
             outputData.isImuPacket = true;
@@ -128,7 +130,7 @@ public:
             receiver.popQueuedPacket();    // packet has been read, get rid of it
             std::vector<CartesianPoint> newPoints(analyzer.getCartesianPoints());
             for (unsigned j = 0; j < newPoints.size(); ++j) {
-                PointOrImuPacket outputData;
+                ListeningOutput outputData;
                 outputData.point = newPoints[j];
                 outputData.isImuPacket = false;
                 output->enqueue(outputData);
@@ -143,12 +145,12 @@ public:
     }
 };
 
-class IcpModule : public assemblyLine::Module<IcpModule, PointOrImuPacket, CartesianPoint> {
-    Registrar<PointOrImuPacket, CartesianPoint>* registrar;
+class IcpModule : public assemblyLine::Module<IcpModule, ListeningOutput, CartesianPoint> {
+    Registrar<ListeningOutput, CartesianPoint>* registrar;
 public:
     IcpModule() { }
     void init() {
-        registrar = new Registrar<PointOrImuPacket, CartesianPoint> (
+        registrar = new Registrar<ListeningOutput, CartesianPoint> (
                 &input, output, POINTS_PER_CLOUD, NUM_HISTS, CLOUD_SPARSITY );
     }
     void operate() {
